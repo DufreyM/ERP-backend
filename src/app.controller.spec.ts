@@ -14,9 +14,15 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('GET /', () => {
+    it('should return Sprint 1 message', () => {
+      expect(appController.getRoot()).toBe('Probando herramientas del Sprint 1');
+    });
+  });
+
+  describe('GET /econofarma', () => {
+    it('should return Econofarma welcome message', () => {
+      expect(appController.getEconofarma()).toBe('Bienvenido al sistema ERP de Farmacia Econofarma');
     });
   });
 });

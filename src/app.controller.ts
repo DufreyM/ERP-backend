@@ -6,7 +6,12 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getRoot(): string {
+    return this.appService.getRootMessage();
+  }
+
+  @Get('econofarma')
+  getEconofarma(): string {
+    return this.appService.getEconofarmaMessage();
   }
 }
