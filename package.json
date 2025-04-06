@@ -1,0 +1,20 @@
+{
+    "name": "express-backend",
+    "version": "1.0.0",
+    "description": "Backend API (de prueba) con Express y PostgreSQL",
+    "main": "index.js", 
+    "scripts": {
+      "start": "node index.js", 
+      "dev": "nodemon index.js" 
+    },
+    "dependencies": {
+      "express": "~5.1.0",
+      "pg": "8.13.3",          
+      "dotenv": "^16.3.1",       
+      "cors": "^2.8.5" 
+    },
+    "devDependencies": {
+      "nodemon": "^3.1.9"
+    }
+  }
+  
