@@ -12,29 +12,28 @@ Este repositorio contiene el backend básico para el primer sprint del ERP de **
 
 ## 📁 Estructura del proyecto
 
-express-backend/
- │ ├── index.js # Punto de entrada de la app 
- ├── .env # Variables de entorno
- ├── package.json # Dependencias y scripts 
- └── README.md # Documentación del proyecto
-
+express-backend/  
+ │ ├── index.js # Punto de entrada de la app   
+ ├── .env # Variables de entorno  
+ ├── package.json # Dependencias y scripts  
+ └── README.md # Documentación del proyecto  
 
 ## ⚙️ Instalación y ejecución
 
-1. Clona el repositorio:
-git clone https://github.com/tuusuario/express-backend.git
-cd express-backend
-npm install
+1. Clona el repositorio:  
+git clone https://github.com/DufreyM/ERP-backend.git  
+cd express-backend  
+npm install  
 
 Crea un archivo .env con los siguientes valores:
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=tu_usuario
-DB_PASSWORD=tu_contraseña
-DB_NAME=nombre_base_datos
-PORT=3000
-
-npm start    # Ejecución normal
+DB_HOST=localhost  
+DB_PORT=5432  
+DB_USER=tu_usuario  
+DB_PASSWORD=tu_contraseña  
+DB_NAME=nombre_base_datos  
+PORT=3000    
+  
+npm start  
 
 ## Ejemplo completo del endpoint:
 URL: http://localhost:3000/
@@ -53,5 +52,5 @@ Respuesta:
   }
 
 ## 👥 Equipo de desarrollo
-Backend Lead: Grupo no. 7 Ingeniería de software 1
-Proyecto ERP para: Farmacia Econofarma
+Backend Lead: Grupo no. 7 Ingeniería de software 1  
+Proyecto ERP para: Farmacia Econofarma  
