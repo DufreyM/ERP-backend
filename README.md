@@ -1,56 +1,84 @@
-# 💊 ERP Farmacia Econofarma - Backend Sprint 1
 
-Este repositorio contiene el backend básico para el primer sprint del ERP de **Farmacia Econofarma**. Se trata de una API REST construida con **Node.js**, **Express** y **PostgreSQL**, diseñada para pruebas iniciales de conexión y despliegue.
+# EconoFarma Backend
 
-## 🚀 Tecnologías utilizadas
+Este es el backend del sistema de gestión de empresas para **EconoFarma**, diseñado para manejar la lógica de negocio, conexión a base de datos y exposición de endpoints RESTful para la gestión de una farmacia ubicada en el interior de Guatemala.
 
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [dotenv](https://www.npmjs.com/package/dotenv)
-- [cors](https://www.npmjs.com/package/cors)
+---
 
-## 📁 Estructura del proyecto
+## Tecnologías Utilizadas
 
-express-backend/  
- │ ├── index.js # Punto de entrada de la app   
- ├── .env # Variables de entorno  
- ├── package.json # Dependencias y scripts  
- └── README.md # Documentación del proyecto  
+- **Express** `~5.1.0`
+- **pg** `8.13.3` – Cliente PostgreSQL
+- **dotenv** `^16.3.1` – Variables de entorno
+- **cors** `^2.8.5` – Control de acceso HTTP
+- **nodemon** `^3.1.9` – Recarga automática en desarrollo
 
-## ⚙️ Instalación y ejecución
+---
 
-1. Clona el repositorio:  
-git clone https://github.com/DufreyM/ERP-backend.git  
-cd express-backend  
-npm install  
+## Requisitos Previos
 
-Crea un archivo .env con los siguientes valores:
-DB_HOST=localhost  
-DB_PORT=5432  
-DB_USER=tu_usuario  
-DB_PASSWORD=tu_contraseña  
-DB_NAME=nombre_base_datos  
-PORT=3000    
-  
-npm start  
+- PostgreSQL
+- Node.js `v18+`
+- Git
 
-## Ejemplo completo del endpoint:
-URL: http://localhost:3000/
+---
 
-Método: GET
+## Instalación
 
-Descripción: Verifica que la API esté corriendo y conectada a la base de datos. También devuelve la fecha y hora actual desde PostgreSQL.
+### 1. Clonar el repositorio
+```bash
+git https://github.com/DufreyM/ERP-backend.git
+cd express-backend
+```
 
-Respuesta: 
+### 2. Instala las dependencias
+```bash
+npm install
+```
 
-  {
-    "message": "API funcionando 🎉; siuuuu",
-    "timestamp": {
-      "now": "2025-04-06T17:15:26.123Z"
-    }
-  }
+### 3. Configura las variables de entorno
 
-## 👥 Equipo de desarrollo
-Backend Lead: Grupo no. 7 Ingeniería de software 1  
-Proyecto ERP para: Farmacia Econofarma  
+Crea un archivo `.env` en la raíz con el siguiente contenido:
+
+```env
+DATABASE_URL=postgres://usuario:contraseña@localhost:5432/nombredb
+PORT=3000
+```
+
+### 4. Inicia el servidor
+
+```bash
+npm run dev
+```
+
+---
+
+## Scripts útiles
+
+```json
+"scripts": {
+  "dev": "nodemon index.js",
+  "start": "node index.js"
+}
+```
+
+---
+
+## Buenas prácticas
+
+- Ramas de desarrollo bajo `feature/` y `hotfix/`.
+- Archivos comentados y organizados por responsabilidad.
+- No subir archivos `.env` ni `node_modules`.
+- Usar `dotenv` para ocultar credenciales.
+
+---
+
+## Contribuciones
+
+Usar ramas con prefijos como `feature/crear-usuario`, y enviar pull request hacia `develop` siguiendo el flujo Git definido.
+
+---
+
+## Licencia
+
+Proyecto académico desarrollado por el Grupo No. 7 del curso de Ingeniería de Software de estudiantes de la Universidad del Valle de Guatemala.
