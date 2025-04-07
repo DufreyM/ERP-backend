@@ -54,3 +54,50 @@ Respuesta:
 ## 👥 Equipo de desarrollo
 Backend Lead: Grupo no. 7 Ingeniería de software 1  
 Proyecto ERP para: Farmacia Econofarma  
+---
+
+## 🐳 Guía para usar Docker en el proyecto
+
+### Inicialización del entorno (Docker)
+
+1. Asegúrate de que **Docker Desktop** esté ejecutándose.  
+   > *(Nota: Puedes buscar “Docker Desktop” en el menú de inicio de Windows y abrir la aplicación manualmente, al menos es de esta manera en el caso de windows.)*
+
+2. Abre dos terminales (por ejemplo, utilizando **Windows Terminal** o **CMD/Powershell**):
+   - Una ubicada en la carpeta `backend`
+   - Otra en la carpeta `frontend`
+
+3. En **cada terminal**, ejecuta el siguiente comando:
+   ```bash
+   docker-compose up --build
+   ```
+   Este comando compilará e iniciará los contenedores correspondientes para cada servicio.
+
+4. Espera a que se completen los procesos de construcción e inicio.  
+   Docker se encargará del resto automáticamente. ✅
+
+---
+
+### Apagar los contenedores
+
+**Opción 1 – Desde la misma terminal:**  
+Presiona `Ctrl + C` en la terminal donde está corriendo Docker. Luego espera a que los contenedores se detengan correctamente.
+
+**Opción 2 – Desde otra terminal (preferida):**
+```bash
+docker-compose down
+```
+
+> Esta opción es la mejor debido a que detiene los contenedores de forma más ordenada y segura.
+
+---
+
+### Reiniciar sin recompilar
+
+Si no se ha modificado el código fuente y simplemente se desea reiniciar los contenedores, puedes usar el siguiente comando (sin la opción `--build`):
+
+```bash
+docker-compose up
+```
+
+Esto reutilizará las imágenes ya construidas, lo que acelera el proceso de inicio.
