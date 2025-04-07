@@ -1,0 +1,33 @@
+services:
+  # Servicio de la base de datos PostgreSQL
+  db:
+    image: postgres:16-alpine #Versión Postgres 16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${DB_USER}   #Credenciales, relativas a .env, para manejo de seguridad
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/docker/postgresql/data
+    ports:
+      - "2222:5432"   #Puertos designados. 2222 para la computadora host, 5432 para el contenedor
+
+  # Servicio del backend (Express)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile  #Se carga a partir del dockefile del mismo nivel de directorio
+    container_name: express_backend
+    environment:  #Se acceden a las credenciales de la BD para poder manejar esta
+      PORT: ${PORT}
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - db  #Se coloca que depende de la imagen de la BD, para que primero se inicialice la imagen de postgres, antes que la de express
+    ports:
+      - "3000:3000" #Puerto computadora local : puerto contenedor Docker
+
+volumes:
+  db_data:  #Se persiste en un volumen local la información almacenada en la BD. Posiblemente, luego se cambie el directorio exacto. 

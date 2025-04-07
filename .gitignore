@@ -12,10 +12,6 @@ logs/
 .env
 .env.* 
 
-# Docker files
-docker-compose.override.yml
-.docker/*
-Dockerfile*
 
 # Build and coverage directories
 /dist
