@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copia el código fuente en el directorio actual
-COPY . .
+# Copia el código fuente en el directorio específico
+COPY ./express-backend .
 
 #Se expone el puerto 3000 para su uso. Y se llaman las funciones a ejecutar. 
 EXPOSE 3000
