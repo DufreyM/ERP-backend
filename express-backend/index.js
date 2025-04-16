@@ -31,6 +31,11 @@ app.get('/', async (req, res) => {
 
 app.use('/auth', authRouter);
 
+// Endpoint para la pantalla de visitador médico
+app.get('/visitador-medico', (req, res) => {
+  res.json({ message: 'Aquí irá la pantalla de visitadores médicos.' });
+});
+
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
