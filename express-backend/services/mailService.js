@@ -10,8 +10,9 @@
 // - Dockerfile: Contiene la configuración necesaria para construir la imagen de Docker para el servicio de backend.
 // - docker-compose.yml: Configuración de Docker para la infraestructura del servicio de backend y la base de datos PostgreSQL.
 
-// Autora:
+// Autores:
 // - María José Girón Isidro, 23559
+// -
 
 // Última modificación: 15/04/2025
 
