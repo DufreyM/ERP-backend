@@ -1,3 +1,21 @@
+// Nombre del archivo: mailService.js
+
+// Principales funciones y pequeña descripción de las mismas:
+// 1. generateToken: Genera un token aleatorio de 32 bytes que se utiliza para la verificación del correo electrónico del usuario.
+// 2. sendVerificationEmail: Envia un correo electrónico de verificación al usuario con un enlace único para confirmar su dirección de correo electrónico.
+// 3. router.post('/register'): Ruta que maneja la solicitud de registro de un usuario. Genera un token y llama a la función sendVerificationEmail para enviar el correo de verificación.
+
+// Archivos relacionados:
+// - .env: Contiene las credenciales necesarias para la configuración del servicio de correo (MailTrap).
+// - Dockerfile: Contiene la configuración necesaria para construir la imagen de Docker para el servicio de backend.
+// - docker-compose.yml: Configuración de Docker para la infraestructura del servicio de backend y la base de datos PostgreSQL.
+
+// Autora:
+// - María José Girón Isidro, 23559
+
+// Última modificación: 15/04/2025
+
+
 const express = require('express');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
