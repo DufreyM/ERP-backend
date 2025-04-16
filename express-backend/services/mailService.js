@@ -24,11 +24,10 @@ require('dotenv').config();
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525,
+    service: 'gmail',
     auth: {
-        user: process.env.MAILTRAP_USER,
-        pass: process.env.MAILTRAP_PASS
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
     }
 });
 
