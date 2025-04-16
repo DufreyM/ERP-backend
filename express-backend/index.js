@@ -3,10 +3,12 @@ const cors = require('cors');
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const authRouter = require('./services/mailService');
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 
 // Configuración del pool de PostgreSQL
 const pool = new Pool({
@@ -26,6 +28,8 @@ app.get('/', async (req, res) => {
     res.status(500).send('Error al conectar con la base de datos');
   }
 });
+
+app.use('/auth', authRouter);
 
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);

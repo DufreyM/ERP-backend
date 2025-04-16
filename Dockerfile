@@ -5,6 +5,8 @@ WORKDIR /app
 # Se le pasan a Docker las dependencias a usar, ubicadas en package.json 
 COPY package*.json ./
 RUN npm install
+RUN npm install nodemailer
+RUN npm install dotenv
 
 # Copia el código fuente en el directorio específico
 COPY ./express-backend .
