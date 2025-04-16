@@ -1,9 +1,9 @@
 // Nombre del archivo: mailService.js
 
 // Principales funciones y pequeña descripción de las mismas:
-// 1. generateToken: Genera un token aleatorio de 32 bytes que se utiliza para la verificación del correo electrónico del usuario.
+// 1. generateToken: Retorna un número fijo como token en vez de generar un token aleatorio.
 // 2. sendVerificationEmail: Envia un correo electrónico de verificación al usuario con un enlace único para confirmar su dirección de correo electrónico.
-// 3. router.post('/register'): Ruta que maneja la solicitud de registro de un usuario. Genera un token y llama a la función sendVerificationEmail para enviar el correo de verificación.
+// 3. router.post('/register'): Ruta que maneja la solicitud de registro de un usuario. Utiliza un número fijo como token y llama a la función sendVerificationEmail para enviar el correo de verificación.
 
 // Archivos relacionados:
 // - .env: Contiene las credenciales necesarias para la configuración del servicio de correo (MailTrap).
@@ -18,7 +18,6 @@
 
 const express = require('express');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
 require('dotenv').config();
 
 const router = express.Router();
@@ -32,8 +31,8 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-    function generateToken() {
-    return crypto.randomBytes(32).toString('hex');
+function generateToken() {
+    return '1234567890';
 }
 
 async function sendVerificationEmail(to, token) {
@@ -43,7 +42,10 @@ async function sendVerificationEmail(to, token) {
         from: 'econofarmaverify@gmail.com',
         to,
         subject: 'Verifica tu correo',
-        html: `<p>Haz clic aquí para verificar tu correo:</p><a href="${link}">${link}</a>`
+        html: `
+        <strong><p>Haz clic aquí para verificar tu correo:</p></strong><br>
+        <a href="${link}">${link}</a>
+        `
     };
 
     await transporter.sendMail(mailOptions);
