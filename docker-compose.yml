@@ -24,6 +24,8 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_PASS: ${GMAIL_PASS}
     depends_on:
       - db  #Se coloca que depende de la imagen de la BD, para que primero se inicialice la imagen de postgres, antes que la de express
     ports:
