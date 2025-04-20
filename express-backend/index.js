@@ -1,30 +1,33 @@
 const express = require('express');
 const cors = require('cors');  
-const { Pool } = require('pg');
 require('dotenv').config();
+const Knex = require('knex');
+const {Model} = require('objection')
+const knexConfig = require('./database/knexfile.js');
+const knex = Knex(knexConfig.development);
+Model.knex(knex);
 
 const authRouter = require('./services/mailService');
+const Usuario = require('./models/Usuario.js');
+
 const app = express();
 const port = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
 
-// Configuración del pool de PostgreSQL
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
 
 app.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({ message: 'API funcionando 🎉; siuuuu', timestamp: result.rows[0] });
+    const timestampResult = await knex.raw('SELECT NOW()');
+    const usuariosResult = await Usuario.query(); 
+
+    res.json({
+      message: 'API funcionando 🎉 con Objection.js + Knex',
+      timestamp: timestampResult.rows[0].now,
+      usuarios: usuariosResult,
+    });
   } catch (err) {
-    console.error(err);
+    console.error('Error en GET /:', err);
     res.status(500).send('Error al conectar con la base de datos');
   }
 });
