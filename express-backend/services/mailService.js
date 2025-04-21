@@ -56,7 +56,7 @@ async function sendVerificationEmail(to, token) {
 }
 
 async function sendChangePassEmail(to, token) {
-    const link = `http://localhost:3000/auth/verify?token=${token}&email=${encodeURIComponent(to)}`;
+    const link = `http://localhost:3000/auth/verify-reset?token=${token}&email=${encodeURIComponent(to)}`;
 
     const mailOptions = {
         from: 'econofarmaverify@gmail.com',
@@ -146,5 +146,83 @@ router.get('/verify', async (req, res) => {
         res.status(500).json({ error: 'Error al verificar el usuario.' });
     }
 });  
+
+router.post('/request-password-reset', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email es requerido' });
+    }
+
+    try {
+        const usuario = await Usuario.query().findOne({ email });
+
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        const token = generateToken();
+
+        await Usuario.query().patch({ token }).where({ id: usuario.id });
+
+        await sendChangePassEmail(email, token);
+    
+        res.status(200).json({ message: 'Correo para cambio de contraseña enviado.' });
+    } catch (err) {
+        console.error('Error en request-password-reset:', err);
+        res.status(500).json({ error: 'Error al solicitar cambio de contraseña' });
+    }
+});
+
+router.get('/verify-reset', async (req, res) => {
+    const { token, email } = req.query;
+    
+    if (!token || !email) {
+        return res.status(400).json({ error: 'Token o correo no proporcionado.' });
+    }
+    
+    try {
+        const usuario = await Usuario.query().findOne({ token, email });
+    
+        if (!usuario) {
+            return res.status(404).json({ error: 'Token inválido o expirado.' });
+        }
+    
+        res.status(200).json({ message: 'Token válido. Procede con cambio de contraseña.' });
+    } catch (err) {
+        console.error('Error al verificar token de reseteo:', err);
+        res.status(500).json({ error: 'Error interno al verificar el token.' });
+    }
+});
+
+router.post('/reset-password', async (req, res) => {
+    const { token, email, nuevaContrasena } = req.body;
+    
+    if (!token || !email || !nuevaContrasena) {
+        return res.status(400).json({ error: 'Datos incompletos.' });
+    }
+
+    try {
+        const usuario = await Usuario.query().findOne({ token, email });
+    
+        if (!usuario) {
+            return res.status(404).json({ error: 'Token o email inválidos.' });
+        }
+    
+        const hashedPassword = await bcrypt.hash(nuevaContrasena, 10);
+    
+        await Usuario.query()
+            .patch({
+                contrasena: hashedPassword,
+                token: null
+            })
+            .where({ id: usuario.id });
+    
+            res.status(200).json({ message: 'Contraseña actualizada correctamente.' });
+    } catch (err) {
+        console.error('Error al resetear contraseña:', err);
+        res.status(500).json({ error: 'Error al cambiar la contraseña.' });
+    }
+});
 
 module.exports = router;
