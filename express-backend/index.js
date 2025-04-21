@@ -42,6 +42,11 @@ app.get('/visitador-medico', (req, res) => {
   res.json({ message: 'Aquí irá la pantalla de visitadores médicos.' });
 });
 
+// Endpoint para la pantalla de restablecer contraseña
+app.get('/reset-password', (req, res) => {
+  res.json({ message: 'Aquí irá la pantalla de restablecer contraseña.' });
+});
+
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
