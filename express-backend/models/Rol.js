@@ -33,6 +33,18 @@ class Rol extends Model {
       }
     };
   }
+
+  static async crearNuevoRol(nombreRol) {
+    try {
+      const nuevoRol = await this.query().insert({ nombre: nombreRol });
+      console.log('Rol creado:', nuevoRol);
+      return nuevoRol
+    } catch (error) {
+      console.error('Error al crear el rol:', error);
+      throw error
+    }
+  }
+
 }
 
 module.exports = Rol;

@@ -9,6 +9,7 @@ Model.knex(knex);
 
 const authRouter = require('./services/mailService');
 const Usuario = require('./models/Usuario.js');
+const Rol = require('./models/Rol.js');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,12 +20,14 @@ app.use(express.json());
 app.get('/', async (req, res) => {
   try {
     const timestampResult = await knex.raw('SELECT NOW()');
-    const usuariosResult = await Usuario.query(); 
+    const usuariosResult = await Usuario.query() 
+    const rolVisitador = await Rol.query().where('id','2')
 
     res.json({
       message: 'API funcionando 🎉 con Objection.js + Knex',
       timestamp: timestampResult.rows[0].now,
       usuarios: usuariosResult,
+      rolEspecífico: rolVisitador
     });
   } catch (err) {
     console.error('Error en GET /:', err);
