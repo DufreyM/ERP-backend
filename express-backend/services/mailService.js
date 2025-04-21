@@ -20,6 +20,8 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const Usuario = require('../models/Usuario');
+
 require('dotenv').config();
 
 const router = express.Router();
@@ -38,7 +40,7 @@ function generateToken() {
 }
 
 async function sendVerificationEmail(to, token) {
-    const link = `http://localhost:3000/auth/verify?token=${token}`;
+    const link = `http://localhost:3000/auth/verify?token=${token}&email=${encodeURIComponent(to)}`;
 
     const mailOptions = {
         from: 'econofarmaverify@gmail.com',
@@ -46,6 +48,22 @@ async function sendVerificationEmail(to, token) {
         subject: 'Verifica tu correo',
         html: `
             <strong><p>Haz clic aquí para verificar tu correo:</p></strong><br>
+            <a href="${link}">${link}</a>
+        `
+    };
+
+    await transporter.sendMail(mailOptions);
+}
+
+async function sendChangePassEmail(to, token) {
+    const link = `http://localhost:3000/auth/verify?token=${token}&email=${encodeURIComponent(to)}`;
+
+    const mailOptions = {
+        from: 'econofarmaverify@gmail.com',
+        to,
+        subject: 'Cambio de contraseña',
+        html: `
+            <strong><p>Haz clic aquí para cambiar tu contraseña:</p></strong><br>
             <a href="${link}">${link}</a>
         `
     };
@@ -74,6 +92,19 @@ router.post('/register', async (req, res) => {
             fechaNacimiento
         });
 
+        const newUser = await Usuario.query().insert({
+            nombre,
+            apellidos,
+            rol_id,
+            email,
+            id_local: local,
+            contrasena: hashedPassword,
+            fechanacimiento: fechaNacimiento,
+            status: 'inactivo',
+            token,
+            verificado: false
+        });
+
         await sendVerificationEmail(email, token);
 
         res.status(200).json({
@@ -85,23 +116,35 @@ router.post('/register', async (req, res) => {
     }
 });
 
-router.get('/auth/verify', (req, res) => {
-    const { token } = req.query;
+router.get('/verify', async (req, res) => {
+    const { token, email } = req.query;
 
-    if (!token) {
-        return res.status(400).json({ error: 'Token no proporcionado.' });
+    if (!token || !email) {
+        return res.status(400).json({ error: 'Token o correo no proporcionado.' });
     }
 
-    // Simulación
-    console.log('Token recibido para verificación:', token);
+    try {
+        const usuario = await Usuario.query().findOne({ 
+            email,
+            token
+        });
 
-    // Renato aquí para ver si el token esta en la base de datos pero aún no lo agregamos. 
-    //Pero aquí debería cambiarse en la base de datos lo que modifique de verificado = true
+        if (!usuario) {
+            return res.status(404).json({ error: 'Token inválido o expirado.' });
+        }
 
-    res.status(200).json({
-        message: 'Token recibido correctamente.',
-    });
-});
+        await Usuario.query()
+        .patch({ 
+            verificado: true, token: null, status: 'activo' }) // Limpia token
+        .where('id', usuario.id);
 
+        res.status(200).json({
+        message: 'Usuario verificado correctamente.',
+        });
+    } catch (err) {
+        console.error('Error al verificar usuario:', err);
+        res.status(500).json({ error: 'Error al verificar el usuario.' });
+    }
+});  
 
 module.exports = router;
