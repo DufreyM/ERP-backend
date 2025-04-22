@@ -23,9 +23,10 @@
 
 const express = require('express');
 const nodemailer = require('nodemailer');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const Usuario = require('../models/Usuario');
+const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 
@@ -76,7 +77,13 @@ async function sendChangePassEmail(to, token) {
     await transporter.sendMail(mailOptions);
 }
 
-router.post('/register', async (req, res) => {
+const authenticateToken = require('../middlewares/authMiddleware');
+const authorizeRole = require('../middlewares/authorizeRole');
+
+router.post('/register', 
+    authenticateToken,
+    authorizeRole([1]),
+    async (req, res) => {
     const {
         nombre, apellidos, rol_id, email, local,
         contrasena, fechaNacimiento
@@ -229,5 +236,39 @@ router.post('/reset-password', async (req, res) => {
         res.status(500).json({ error: 'Error al cambiar la contraseña.' });
     }
 });
+
+router.post('/login', async (req, res) => {
+    const { email, contrasena } = req.body;
+
+    try {
+        const usuario = await Usuario.query().findOne({ email });
+
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        const match = await bcrypt.compare(contrasena, usuario.contrasena);
+
+        if (!match) {
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
+        }
+
+        if (!usuario.verificado) {
+            return res.status(403).json({ error: 'Correo no verificado' });
+        }
+
+        const token = jwt.sign({
+            id: usuario.id,
+            email: usuario.email,
+            rol_id: usuario.rol_id
+        }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(200).json({ token });
+    } catch (err) {
+        console.error('Error en login:', err);
+        res.status(500).json({ error: 'Error al iniciar sesión' });
+    }
+});
+
 
 module.exports = router;
