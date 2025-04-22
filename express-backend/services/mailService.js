@@ -4,16 +4,18 @@
 // 1. generateToken: Genera un token aleatorio de verificación.
 // 2. sendVerificationEmail: Envía un correo electrónico de verificación al usuario con un enlace único para confirmar su dirección de correo electrónico.
 // 3. sendChangePassEmail: Envía un correo al usuario con un enlace para restablecer su contraseña.
-// 4. router.post('/register'): Ruta que maneja la solicitud de registro de un usuario. Genera un token aleatorio, hashea la contraseña y envía un correo de verificación, guardando el usuario en la base de datos con estado "inactivo".
-// 5. router.get('/verify'): Ruta que verifica el token de registro enviado por correo. Activa y verifica la cuenta del usuario si el token es válido.
-// 6. router.post('/request-password-reset'): Ruta que recibe el email del usuario y genera un token para cambio de contraseña. Luego, envía un correo con un enlace para restablecerla.
-// 7. router.get('/verify-reset'): Ruta que valida el token de reseteo de contraseña antes de permitir el cambio.
-// 8. router.post('/reset-password'): Ruta que actualiza la contraseña del usuario si el token es válido. También elimina el token después del uso.
+// 4. router.post('/register'): Ruta que maneja la solicitud de registro de un usuario. Genera un token aleatorio para verificación por correo, hashea la contraseña y guarda al usuario con estado "inactivo" y verificado en falso. Requiere autenticación por token y rol de administradora.
+// 5. router.post('/login'): Ruta que maneja el inicio de sesión del usuario. Valida las credenciales y devuelve un token JWT que debe enviarse en futuras solicitudes protegidas.
+// 6. router.get('/verify'): Ruta que verifica el token de registro enviado por correo. Activa y verifica la cuenta del usuario si el token es válido.
+// 7. router.post('/request-password-reset'): Ruta que recibe el email del usuario y genera un token para cambio de contraseña. Luego, envía un correo con un enlace para restablecerla.
+// 8. router.get('/verify-reset'): Ruta que valida el token de reseteo de contraseña antes de permitir el cambio.
+// 9. router.post('/reset-password'): Ruta que actualiza la contraseña del usuario si el token es válido. También elimina el token después del uso.
 
 // Archivos relacionados:
-// - .env: Contiene las credenciales necesarias para la configuración del servicio de correo (Gmail o MailTrap).
+// - .env: Contiene las credenciales necesarias para la configuración del servicio de correo (Gmail o MailTrap) y la clave secreta para JWT.
 // - Dockerfile: Contiene la configuración necesaria para construir la imagen de Docker para el servicio de backend.
 // - docker-compose.yml: Configuración de Docker para la infraestructura del servicio de backend y la base de datos PostgreSQL.
+
 
 // Autores:
 // - María José Girón Isidro, 23559
