@@ -115,8 +115,7 @@ router.post('/register',
             contrasena: hashedPassword,
             fechanacimiento: fechaNacimiento,
             status: 'inactivo',
-            token,
-            verificado: false
+            token
         });
 
         await sendVerificationEmail(email, token);
