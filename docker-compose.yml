@@ -31,5 +31,23 @@ services:
     ports:
       - "3000:3000" #Puerto computadora local : puerto contenedor Docker
 
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: express_backend_test
+    environment:
+      NODE_ENV: test
+      PORT: 3001
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      GMAIL_USER: fake@gmail.com
+      GMAIL_PASS: fakepass
+    depends_on:
+      - db
+    command: ["npm", "test"]
+
 volumes:
   db_data:  #Se persiste en un volumen local la información almacenada en la BD. Posiblemente, luego se cambie el directorio exacto. 

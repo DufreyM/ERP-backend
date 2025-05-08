@@ -4,6 +4,8 @@ RUN apk add --no-cache postgresql-client dos2unix
 WORKDIR /app
 #Se elige node 22; y se le solicita que trabaje en el directorio /app 
 
+ENV NODE_ENV=development
+
 # Se le pasan a Docker las dependencias a usar, ubicadas en package.json 
 COPY package*.json ./
 RUN npm install

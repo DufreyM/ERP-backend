@@ -7,7 +7,7 @@ const knexConfig = require('./database/knexfile.js');
 const knex = Knex(knexConfig.development);
 Model.knex(knex);
 
-const authRouter = require('./services/mailService');
+const { router: authRouter } = require('./services/mailService');
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
 
@@ -47,6 +47,10 @@ app.get('/reset-password', (req, res) => {
   res.json({ message: 'Aquí irá la pantalla de restablecer contraseña.' });
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Servidor Express en http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`🚀 Servidor Express en http://localhost:${port}`);
+  });
+}
+
+module.exports = app;

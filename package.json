@@ -6,10 +6,12 @@
     "scripts": {
         "dev": "nodemon index.js",
         "migrate": "knex migrate:latest",
-        "start": "node express-backend/index.js"
+        "start": "node express-backend/index.js",
+        "test": "jest"
     },
     "dependencies": {
         "cors": "^2.8.5",
+        "supertest": "^6.3.3",
         "dotenv": "^16.3.1",
         "express": "~5.1.0",
         "express-backend": "file:",
@@ -20,6 +22,8 @@
         "knex":"2.5.1"
     },
     "devDependencies": {
-        "nodemon": "^3.1.9"
+    "jest": "^29.0.0",
+    "supertest": "^6.3.3",
+    "nodemon": "^3.1.9"
     }
 }
