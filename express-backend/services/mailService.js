@@ -264,7 +264,28 @@ router.post('/login', async (req, res) => {
             rol_id: usuario.rol_id
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.status(200).json({ token });
+        // Redirección según el rol
+        let redirectUrl;
+
+        switch (usuario.rol_id) {
+            case 1:
+                redirectUrl = '/admin/dashboard';
+                break;
+            case 2:
+                redirectUrl = '/dependienta/inicio';
+                break;
+            case 3:
+                redirectUrl = '/visitador/inicio';
+                break;
+            case 4:
+                redirectUrl = '/contador/inicio';
+                break;
+            default:
+                redirectUrl = '/';
+        }
+
+        res.status(200).json({ token, redirectUrl });
+
     } catch (err) {
         console.error('Error en login:', err);
         res.status(500).json({ error: 'Error al iniciar sesión' });
