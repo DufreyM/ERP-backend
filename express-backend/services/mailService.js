@@ -269,7 +269,7 @@ router.post('/login', async (req, res) => {
 
         switch (usuario.rol_id) {
             case 1:
-                redirectUrl = '/admin/dashboard';
+                redirectUrl = '/admin/inicio';
                 break;
             case 2:
                 redirectUrl = '/dependienta/inicio';
