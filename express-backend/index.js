@@ -53,3 +53,6 @@ app.get('/reset-password', (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
+
+const inventarioRouter = require('./services/inventarioService');
+app.use('/inventario', inventarioRouter);
