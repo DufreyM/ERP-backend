@@ -56,3 +56,6 @@ app.listen(port, () => {
 
 const inventarioRouter = require('./services/inventarioService');
 app.use('/inventario', inventarioRouter);
+
+const inventarioRouter = require('./services/inventarioService');
+app.use('/inventario', inventarioRouter);

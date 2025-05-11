@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Inventario = require('../models/Inventario');
-const Movimiento = require('../models/MovimientoInventario');
-const TipoMovimiento = require('../models/TipoMovimientoInventario');
+const { Inventario, MovimientoInventario } = require('../models'); // Asegúrate de que el modelo combinado exporte ambos modelos
 
 // Crear producto (inventario)
 router.post('/producto', async (req, res) => {
@@ -14,17 +12,33 @@ router.post('/producto', async (req, res) => {
   }
 });
 
-// Registrar movimiento (entrada/salida)
+// Registrar movimiento (entrada/salida) y actualizar inventario
 router.post('/movimiento', async (req, res) => {
   try {
-    const movimiento = await Movimiento.query().insert({
-      inventario_id: req.body.inventario_id,
-      tipo_movimiento_id: req.body.tipo_movimiento_id,
-      cantidad: req.body.cantidad,
-      observacion: req.body.observacion,
+    const { inventario_id, tipo_movimiento_id, cantidad, observacion } = req.body;
+
+    // Registra el movimiento
+    const movimiento = await MovimientoInventario.query().insert({
+      inventario_id,
+      tipo_movimiento_id,
+      cantidad,
+      observacion,
       fecha: new Date()
     });
-    res.json({ message: 'Movimiento registrado', movimiento });
+
+    // Actualiza el inventario según el tipo de movimiento
+    const inventario = await Inventario.query().findById(inventario_id);
+    let nuevoStock = inventario.cantidad + (movimiento.tipo_movimiento_id === 1 ? cantidad : -cantidad);
+    
+    // Asegúrate de que el stock no sea negativo
+    if (nuevoStock < 0) {
+      return res.status(400).json({ error: 'No hay suficiente stock disponible' });
+    }
+
+    // Actualiza el inventario con el nuevo stock
+    await Inventario.query().patchAndFetchById(inventario_id, { cantidad: nuevoStock });
+
+    res.json({ message: 'Movimiento registrado y stock actualizado', movimiento });
   } catch (err) {
     res.status(500).json({ error: 'Error al registrar movimiento', detalle: err.message });
   }
@@ -33,7 +47,7 @@ router.post('/movimiento', async (req, res) => {
 // Obtener stock actual por producto
 router.get('/stock/:idInventario', async (req, res) => {
   try {
-    const total = await Movimiento.query()
+    const total = await MovimientoInventario.query()
       .where('inventario_id', req.params.idInventario)
       .sum('cantidad as stock');
     res.json({ inventario_id: req.params.idInventario, stock: total[0].stock || 0 });
