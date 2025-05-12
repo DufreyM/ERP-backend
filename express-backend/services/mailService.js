@@ -83,12 +83,12 @@ const authenticateToken = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/authorizeRole');
 
 router.post('/register', 
-    authenticateToken,
-    authorizeRole([1]),
+/*     authenticateToken,
+    authorizeRole([1]), */
     async (req, res) => {
     const {
         nombre, apellidos, rol_id, email, local,
-        contrasena, fechaNacimiento
+        contrasena, fechaNacimiento, proveedor_id
     } = req.body;
 
     try {
@@ -106,17 +106,40 @@ router.post('/register',
             fechaNacimiento
         });
 
-        const newUser = await Usuario.query().insert({
+        const newUserData = {
             nombre,
             apellidos,
             rol_id,
             email,
-            id_local: local,
             contrasena: hashedPassword,
             fechanacimiento: fechaNacimiento,
             status: 'inactivo',
             token
-        });
+        };
+
+        if (rol_id !== 3) {
+            if (!local) {
+                return res.status(400).json({
+                    error: 'Falta información adicional de local.'
+                });
+            }
+            newUserData.id_local = local;
+        }
+
+        const newUser = await Usuario.query().insert(newUserData);
+
+        if (rol_id === 3) {
+            if (!proveedor_id) {
+                return res.status(400).json({
+                    error: 'Falta información adicional para Visitador Médico: proveedor_id requerido.'
+                });
+            }
+
+            await Usuario.knex().insert({
+                usuario_id: newUser.id,
+                proveedor_id
+            }).into('visitadores_medicos');
+        }
 
         await sendVerificationEmail(email, token);
 
