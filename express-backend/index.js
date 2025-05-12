@@ -11,6 +11,8 @@ const authRouter = require('./services/mailService');
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
 const Inventario = require('./models/Inventario.js');
+const rolesRouter = require('./routes/roles');
+const localesRouter = require('./routes/locales');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -39,6 +41,8 @@ app.get('/', async (req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/api/roles', rolesRouter);
+app.use('/api/locales', localesRouter);
 
 // Endpoint para la pantalla de visitador médico
 app.get('/visitador-medico', (req, res) => {
