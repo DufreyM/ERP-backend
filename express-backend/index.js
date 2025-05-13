@@ -15,7 +15,7 @@ const Inventario = require('./models/Inventario.js');
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors({
-    origin: 'http://frontend:3001', 
+    origin: 'http://localhost:3001', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
