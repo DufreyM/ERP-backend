@@ -2,25 +2,30 @@ const express = require('express');
 const cors = require('cors');  
 require('dotenv').config();
 const Knex = require('knex');
-const {Model} = require('objection')
+const {Model} = require('objection');
 const knexConfig = require('./database/knexfile.js');
 const knex = Knex(knexConfig.development);
 Model.knex(knex);
 
 const authRouter = require('./services/mailService');
+const inventarioRouter = require('./services/inventarioService'); // <-- ✅ NUEVA LÍNEA
+
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
 const Inventario = require('./models/Inventario.js');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
 app.use(cors({
     origin: 'http://localhost:3001', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true
 }));
 app.use(express.json());
 
+app.use('/auth', authRouter);
+app.use('/inventario', inventarioRouter); 
 
 app.get('/', async (req, res) => {
   try {
@@ -42,14 +47,10 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.use('/auth', authRouter);
-
-// Endpoint para la pantalla de visitador médico
 app.get('/visitador-medico', (req, res) => {
   res.json({ message: 'Aquí irá la pantalla de visitadores médicos.' });
 });
 
-// Endpoint para la pantalla de restablecer contraseña
 app.get('/reset-password', (req, res) => {
   res.json({ message: 'Aquí irá la pantalla de restablecer contraseña.' });
 });
