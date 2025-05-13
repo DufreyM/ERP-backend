@@ -84,7 +84,7 @@ const authorizeRole = require('../middlewares/authorizeRole');
 
 router.post('/register', 
     authenticateToken,
-    authorizeRole([1]),
+    authorizeRole([1,2,3]),
     async (req, res) => {
     const {
         nombre, apellidos, rol_id, email, local,
@@ -239,7 +239,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    const { email, contrasena } = req.body;
+    const { email, contrasena: password } = req.body;
 
     try {
         const usuario = await Usuario.query().findOne({ email });
@@ -248,7 +248,7 @@ router.post('/login', async (req, res) => {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        const match = await bcrypt.compare(contrasena, usuario.contrasena);
+        const match = await bcrypt.compare(password, usuario.contrasena);
 
         if (!match) {
             return res.status(401).json({ error: 'Contraseña incorrecta' });
@@ -264,7 +264,6 @@ router.post('/login', async (req, res) => {
             rol_id: usuario.rol_id
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        // Redirección según el rol
         let redirectUrl;
 
         switch (usuario.rol_id) {
@@ -291,6 +290,5 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 });
-
 
 module.exports = router;
