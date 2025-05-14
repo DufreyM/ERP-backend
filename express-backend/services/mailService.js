@@ -112,7 +112,7 @@ router.post('/register',
             rol_id,
             email,
             contrasena: hashedPassword,
-            fechanacimiento: fechaNacimiento,
+            fechaNacimiento,
             status: 'inactivo',
             token
         };
@@ -152,6 +152,81 @@ router.post('/register',
     }
 });
 
+router.post('/register-visitador', async (req, res) => {
+    const {
+        nombre,
+        apellido,
+        fechaNacimiento,
+        password,
+        email,
+        proveedor
+    } = req.body;
+
+    try {
+        console.log('Datos recibidos del frontend:', {
+            nombre,
+            apellido,
+            fechaNacimiento,
+            password,
+            email,
+            proveedor
+        });
+
+        // Buscar proveedor por nombre (puedes ajustar esto si decides usar ID directamente)
+        const proveedorEncontrado = await Usuario.knex()('proveedores')
+            .where('nombre', proveedor)
+            .first();
+
+        console.log('Proveedor encontrado:', proveedorEncontrado);
+
+        if (!proveedorEncontrado) {
+            return res.status(400).json({ error: 'Proveedor no encontrado' });
+        }
+        
+        if (!fechaNacimiento || isNaN(new Date(fechaNacimiento).getTime())) {
+            return res.status(400).json({ error: 'Fecha de nacimiento inválida o faltante' });
+        }
+
+        const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(fechaNacimiento);
+        if (!isValidDate) {
+            return res.status(400).json({ error: 'Formato de fecha inválido. Se requiere YYYY-MM-DD.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const token = generateToken();
+
+        const newUserData = {
+            nombre,
+            apellidos: apellido,
+            rol_id: 3,
+            email,
+            contrasena: hashedPassword,
+            fechanacimiento: fechaNacimiento,
+            status: 'inactivo',
+            token
+        };
+
+        console.log("Usuario visitador médico: ", newUserData);
+
+        const newUser = await Usuario.query().insert(newUserData);
+
+        await Usuario.knex().insert({
+            usuario_id: newUser.id,
+            proveedor_id: proveedorEncontrado.id
+        }).into('visitadores_medicos');
+
+        console.log('Enviando correo de verificación a:', email);
+        await sendVerificationEmail(email, token);
+
+        res.status(200).json({
+            message: 'Registro exitoso. Revisa tu correo para verificar la cuenta.'
+        });
+    } catch (error) {
+        console.error('Error al registrar visitador médico:', error);
+        res.status(500).json({ error: 'Error al registrar visitador médico' });
+    }
+});
+
 router.get('/verify', async (req, res) => {
     const { token, email } = req.query;
 
@@ -171,7 +246,7 @@ router.get('/verify', async (req, res) => {
 
         await Usuario.query()
         .patch({ 
-            verificado: true, token: null, status: 'activo' }) // Limpia token
+            verificado: true, token: null, status: 'inactivo' }) // Limpia token
         .where('id', usuario.id);
 
         res.status(200).json({
