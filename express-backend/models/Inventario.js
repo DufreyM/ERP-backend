@@ -40,7 +40,7 @@ class Inventario extends Model {
 
   static get relationMappings() {
     const Lote = require('./Lote');
-    const TipoMovimiento = require('./TipoMovimientoInventario');
+    const TipoMovimiento = require('./Tipo_Movimiento_Inventario');
     const Venta = require('./Venta');
     const Compra = require('./Compra');
     const Local = require('./Local');
