@@ -69,8 +69,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
-
 // Obtener un documento por ID
 router.get('/:id', async (req, res) => {
   try {
@@ -112,6 +110,8 @@ router.post('/', upload.single('archivo'), async (req, res) => {
 
     const nuevo = await DocumentoLocal.query().insert({
       ...req.body,
+      usuario_id: parseInt(req.body.usuario_id, 10),
+      local_id: parseInt(req.body.local_id, 10),
       archivo: archivoRuta
     });
 
@@ -120,6 +120,7 @@ router.post('/', upload.single('archivo'), async (req, res) => {
     res.status(400).json({ error: 'Error al crear el documento', details: err.message });
   }
 });
+
 
 // Actualizar documento
 router.put('/:id', upload.single('archivo'), async (req, res) => {
