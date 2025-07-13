@@ -1,8 +1,25 @@
+// Nombre del archivo: documentoLocalService.js
+
+// Principales funciones y pequeña descripción de las mismas:
+// 1. router.get('/'): Obtiene todos los documentos locales con sus relaciones (usuario y local).
+// 2. router.get('/:id'): Obtiene un solo documento local por ID.
+// 3. router.post('/'): Crea un nuevo documento local con los datos del cuerpo de la solicitud.
+// 4. router.put('/:id'): Actualiza un documento existente.
+// 5. router.delete('/:id'): Elimina un documento local por ID.
+
+// Archivos relacionados:
+// - models/DocumentoLocal.js: Define el modelo de datos para los documentos locales.
+// - database/knexfile.js: Configuración de base de datos.
+// - app.js o index.js: Punto de entrada donde se importa este router.
+
+// Autor: Leonardo Dufrey Mejía Mejía, 23648
+// Última modificación: 13/07/2025
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const DocumentoLocal = require('../models/DocumentoLocal');
+const path = require('path');
 
 // Configuración de multer
 const storage = multer.diskStorage({
@@ -16,54 +33,110 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// GET todos los documentos
+// Obtener todos los documentos
 router.get('/', async (req, res) => {
   try {
-    const docs = await DocumentoLocal.query().withGraphFetched('[usuario, local]');
-    res.json(docs);
+    const localId = req.query.local_id;
+
+    const docs = await DocumentoLocal
+      .query()
+      .modify(query => {
+        if (localId) {
+          query.where('local_id', localId);
+        }
+      })
+      .withGraphFetched('[usuario, local]')
+      .modifyGraph('usuario', builder => {
+        builder.select('id', 'nombre', 'apellidos', 'email');
+      })
+      .modifyGraph('local', builder => {
+        builder.select('id', 'nombre', 'direccion', 'nit_emisor');
+      });
+
+    const filtrado = docs.map(doc => ({
+      id: doc.id,
+      nombre: doc.nombre,
+      archivo: doc.archivo,
+      creacion: doc.creacion,
+      vencimiento: doc.vencimiento,
+      usuario: doc.usuario,
+      local: doc.local
+    }));
+
+    res.json(filtrado);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener los documentos', details: err.message });
+    res.status(500).json({ error: 'Error al obtener documentos', details: err.message });
   }
 });
 
-// GET documento por ID
+
+
+// Obtener un documento por ID
 router.get('/:id', async (req, res) => {
   try {
-    const doc = await DocumentoLocal.query().findById(req.params.id).withGraphFetched('[usuario, local]');
+    const doc = await DocumentoLocal
+      .query()
+      .findById(req.params.id)
+      .withGraphFetched('[usuario, local]')
+      .modifyGraph('usuario', builder => {
+        builder.select('id', 'nombre', 'apellidos', 'email');
+      })
+      .modifyGraph('local', builder => {
+        builder.select('id', 'nombre', 'direccion', 'nit_emisor');
+      });
+
     if (!doc) return res.status(404).json({ error: 'Documento no encontrado' });
-    res.json(doc);
+
+    const filtrado = {
+      id: doc.id,
+      nombre: doc.nombre,
+      archivo: doc.archivo,
+      creacion: doc.creacion,
+      vencimiento: doc.vencimiento,
+      usuario: doc.usuario,
+      local: doc.local
+    };
+
+    res.json(filtrado);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener el documento', details: err.message });
   }
 });
 
-// POST nuevo documento con archivo
+// Crear nuevo documento
 router.post('/', upload.single('archivo'), async (req, res) => {
   try {
-    const body = {
-      ...req.body,
-      archivo: req.file ? `/uploads/${req.file.filename}` : null
-    };
+    const archivoRuta = req.file
+      ? `/uploads/${req.file.filename}`
+      : req.body.archivo || null;
 
-    const nuevo = await DocumentoLocal.query().insert(body);
+    const nuevo = await DocumentoLocal.query().insert({
+      ...req.body,
+      archivo: archivoRuta
+    });
+
     res.status(201).json(nuevo);
   } catch (err) {
     res.status(400).json({ error: 'Error al crear el documento', details: err.message });
   }
 });
 
-// PUT actualizar documento 
+// Actualizar documento
 router.put('/:id', upload.single('archivo'), async (req, res) => {
   try {
-    const datosActualizados = {
-      ...req.body
+    const archivoRuta = req.file
+      ? `/uploads/${req.file.filename}`
+      : req.body.archivo || undefined; 
+
+    const data = {
+      ...req.body,
     };
 
-    if (req.file) {
-      datosActualizados.archivo = `/uploads/${req.file.filename}`;
+    if (archivoRuta !== undefined) {
+      data.archivo = archivoRuta;
     }
 
-    const actualizado = await DocumentoLocal.query().patchAndFetchById(req.params.id, datosActualizados);
+    const actualizado = await DocumentoLocal.query().patchAndFetchById(req.params.id, data);
     if (!actualizado) return res.status(404).json({ error: 'Documento no encontrado' });
 
     res.json(actualizado);
@@ -72,7 +145,7 @@ router.put('/:id', upload.single('archivo'), async (req, res) => {
   }
 });
 
-// DELETE eliminar documento
+// Eliminar documento
 router.delete('/:id', async (req, res) => {
   try {
     const eliminado = await DocumentoLocal.query().deleteById(req.params.id);
