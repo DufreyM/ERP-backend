@@ -15,6 +15,7 @@ const Rol = require('./models/Rol.js');
 const Inventario = require('./models/Inventario.js');
 const rolesRouter = require('./routes/roles');
 const localesRouter = require('./routes/locales');
+const documentosLocalesRouter = require('./services/documentoLocalService');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 app.use('/auth', authRouter);
 app.use('/inventario', inventarioRouter); 
@@ -49,7 +51,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.use('/auth', authRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/locales', localesRouter);
 
@@ -65,3 +66,5 @@ app.get('/reset-password', (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
+
+app.use('/documentos-locales', documentosLocalesRouter);
