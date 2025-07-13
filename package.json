@@ -17,6 +17,7 @@
         "express-backend": "file:",
         "jsonwebtoken": "9.0.2",
         "knex": "2.5.1",
+        "multer": "^2.0.1",
         "nodemailer": "6.10.1",
         "objection": "3.1.5",
         "pg": "8.13.3"
