@@ -17,6 +17,6 @@ UPDATE visitadores_medicos SET usuario_id = 6 WHERE id =6;
 UPDATE visitadores_medicos SET usuario_id = 7 WHERE id =7;
 UPDATE visitadores_medicos SET usuario_id = 8 WHERE id =8;
 UPDATE visitadores_medicos SET usuario_id = 9 WHERE id =9;
-UPDATE visitadores_medicos SET usuario_id = 14 WHERE id =10;
+UPDATE visitadores_medicos SET usuario_id = 13 WHERE id =10;
 
 -- si fuera necesario, aqui se puede settear en null los locales de los visitadores-medicos
