@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
       })
       .withGraphFetched('[usuario, local]')
       .modifyGraph('usuario', builder => {
-        builder.select('id', 'nombre', 'apellidos', 'email');
+        builder.select('id', 'rol_id', 'nombre', 'apellidos', 'email');
       })
       .modifyGraph('local', builder => {
         builder.select('id', 'nombre', 'direccion', 'nit_emisor');
