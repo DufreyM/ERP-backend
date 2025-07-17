@@ -9,7 +9,7 @@ jest.mock('../models/DocumentoLocal');
 
 const app = express();
 app.use(express.json());
-app.use('/', documentoRouter); // las rutas en documentoLocalService no tienen prefijo
+app.use('/', documentoRouter); 
 
 describe('Documento Local Service API', () => {
 
@@ -32,7 +32,7 @@ describe('Documento Local Service API', () => {
     modify: jest.fn().mockReturnThis(),
     withGraphFetched: jest.fn().mockReturnThis(),
     modifyGraph: jest.fn().mockReturnThis(),
-    then: (cb) => Promise.resolve(cb(mockDocs)) // esta línea es clave
+    then: (cb) => Promise.resolve(cb(mockDocs)) 
   });
 
   const res = await request(app).get('/');
