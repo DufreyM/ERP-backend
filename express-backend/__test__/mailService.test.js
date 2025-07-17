@@ -1,12 +1,10 @@
-// __tests__/mailService.test.js
-
 // 1. Mock de nodemailer
 jest.mock('nodemailer');
 const nodemailer = require('nodemailer');
 const sendMailMock = jest.fn().mockResolvedValue();
 nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock });
 
-// 2. Mock de Usuario (Objection.js)
+// 2. Mock de Usuario 
 jest.mock('../models/Usuario');
 const Usuario = require('../models/Usuario');
 
