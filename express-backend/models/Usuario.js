@@ -23,7 +23,9 @@ class Usuario extends Model {
         id_local: { type: ['integer', 'null'] }, 
         contrasena: { type: 'string' },
         fechanacimiento: { type: 'string', format: 'date' },
-        creacion: { type: 'string', format: 'date-time' }
+        creacion: { type: 'string', format: 'date-time' },
+        token: { type: ['string', 'null'] },
+        verificado: { type: 'boolean', default: false },
       }
     };
   }

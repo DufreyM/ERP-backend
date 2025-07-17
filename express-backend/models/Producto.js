@@ -31,13 +31,17 @@ class Producto extends Model {
         preciocosto: { type: 'number' },
         receta: { type: 'boolean' },
         stock_minimo: { type: 'integer', minimum: 0 },
-        detalles: { type: ['string', 'null'] }
+        detalles: { type: ['string', 'null'] },
+        imagen: { type: ['string', 'null'] },
       }
     };
   }
 
+  
   static get relationMappings() {
     const Proveedor = require('./Proveedor');
+    const Categoria = require('./Categoria');
+    const CategoriaProducto = require('./Categoria_Producto');
 
     return {
       proveedor: {
@@ -47,9 +51,22 @@ class Producto extends Model {
           from: 'productos.proveedor_id',
           to: 'proveedores.id'
         }
+      },
+      categorias: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Categoria,
+        join: {
+          from: 'productos.codigo',
+          through: {
+            from: 'categorias_productos.producto_id',
+            to: 'categorias_productos.categoria_id',
+            modelClass: CategoriaProducto,
+          },
+          to: 'categorias.id',
+        }
       }
     };
   }
 }
 
-module.exports = Producto
+module.exports = Producto;

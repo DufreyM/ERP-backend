@@ -21,7 +21,9 @@ class DocumentoLocal extends Model {
         archivo: { type: 'string' }, 
         local_id: { type: 'integer' },
         creacion: { type: 'string', format: 'date-time' },
-        vencimiento: { type: ['string', 'null'], format: 'date' }
+        vencimiento: { type: ['string', 'null'], format: 'date' },
+        updatedat: { type: ['string', 'null'], format: 'date-time' },
+        deletedat: { type: ['string', 'null'], format: 'date-time' },
       }
     };
   }

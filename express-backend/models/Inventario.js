@@ -16,8 +16,6 @@ class Inventario extends Model {
         'lote_id',
         'cantidad',
         'tipo_movimiento_id',
-        'precio_venta',
-        'precio_costo',
         'local_id',
         'encargado_id'
       ],
@@ -29,8 +27,8 @@ class Inventario extends Model {
         tipo_movimiento_id: { type: 'integer' },
         venta_id: { type: ['integer', 'null'] },
         compra_id: { type: ['integer', 'null'] },
-        precio_venta: { type: 'number' },
-        precio_costo: { type: 'number' },
+        precio_venta: { type: ['number' , 'null']},
+        precio_costo: { type: ['number','null'] },
         local_id: { type: 'integer' },
         encargado_id: { type: 'integer' },
         fecha: { type: 'string', format: 'date-time' }
