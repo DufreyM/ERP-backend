@@ -1,33 +1,15 @@
--- 1. Modificar la tabla Calendario para incluir tipo de evento
+-- Añadir columna para el tipo de evento
 ALTER TABLE Calendario 
-ADD COLUMN tipo_evento VARCHAR(20) NOT NULL DEFAULT 'visita',
-ADD CONSTRAINT chk_tipo_evento CHECK (tipo_evento IN ('visita', 'notificacion', 'tarea'));
+ADD COLUMN tipo_evento VARCHAR(50) NOT NULL DEFAULT 'visita_medica',
+ADD COLUMN fecha_eliminado TIMESTAMP NULL;
 
--- 2. Crear VIEW para notificaciones (como sugeriste)
-CREATE VIEW vw_notificaciones_recientes AS
-SELECT 
-    'promocion' as origen,
-    id,
-    titulo,
-    descripcion as detalles,
-    fecha_creacion as fecha,
-    local_id,
-    NULL as visitador_id,
-    usuario_creador_id as usuario_id
-FROM promociones
-WHERE fecha_creacion >= NOW() - INTERVAL '7 days'
+-- Crear tabla para tipos de eventos si queremos mantenerlos normalizados
+CREATE TABLE Tipos_Evento_Calendario (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) UNIQUE NOT NULL
+);
 
-UNION ALL
-
-SELECT 
-    'inventario' as origen,
-    i.id,
-    CONCAT('Actualización de inventario: ', p.nombre) as titulo,
-    CONCAT('Cantidad cambiada a: ', i.cantidad) as detalles,
-    i.fecha_actualizacion as fecha,
-    i.local_id,
-    NULL as visitador_id,
-    i.usuario_id
-FROM inventario i
-JOIN productos p ON i.producto_id = p.id
-WHERE i.fecha_actualizacion >= NOW() - INTERVAL '7 days';
+INSERT INTO Tipos_Evento_Calendario (nombre) VALUES 
+('visita_medica'),
+('notificacion'),
+('tarea');
