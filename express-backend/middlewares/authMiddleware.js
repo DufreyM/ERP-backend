@@ -25,7 +25,12 @@ module.exports = function authenticateToken(req, res, next) {
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Token inválido o expirado' });
 
-        req.user = user;
+            req.user = {
+            id: user.id,
+            rol_id: user.rol_id,
+            local_id: user.local_id
+        };
+
         next();
     });
 };
