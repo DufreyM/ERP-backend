@@ -359,7 +359,8 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({
             id: usuario.id,
             email: usuario.email,
-            rol_id: usuario.rol_id
+            rol_id: usuario.rol_id,
+            local_id: usuario.id_local // Asegúrate de incluir el local_id
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         let redirectUrl;

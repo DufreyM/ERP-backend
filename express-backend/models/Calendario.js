@@ -12,7 +12,7 @@ class Calendario extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-      required: ['usuario_id', 'titulo', 'estado_id', 'fecha'],
+      required: ['usuario_id', 'titulo', 'estado_id', 'fecha', 'tipo_evento', 'local_id'],
 
       properties: {
         id: { type: 'integer' },
@@ -22,7 +22,9 @@ class Calendario extends Model {
         estado_id: { type: 'integer' },
         detalles: { type: ['string', 'null'] },
         fecha: { type: 'string', format: 'date-time' },
-        local_id: { type: ['integer', 'null'] }
+        local_id: { type: 'integer' },
+        tipo_evento: { type: 'string', enum: ['visita_medica', 'notificacion', 'tarea'] },
+        fecha_eliminado: { type: ['string', 'null'], format: 'date-time' }
       }
     };
   }

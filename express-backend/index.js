@@ -15,6 +15,7 @@ const Rol = require('./models/Rol.js');
 const Inventario = require('./models/Inventario.js');
 const rolesRouter = require('./routes/roles');
 const localesRouter = require('./routes/locales');
+const calendarioRouter = require('./routes/calendario');
 const documentosLocalesRouter = require('./services/documentoLocalService');
 
 const app = express();
@@ -53,6 +54,7 @@ app.get('/', async (req, res) => {
 
 app.use('/api/roles', rolesRouter);
 app.use('/api/locales', localesRouter);
+app.use('/api/calendario', calendarioRouter);
 
 // Endpoint para la pantalla de visitador médico
 app.get('/visitador-medico', (req, res) => {
