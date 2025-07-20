@@ -1,3 +1,17 @@
+// Nombre del archivo: productoService.js
+
+// Principales funciones y pequeña descripción de las mismas:
+// 1. obtenerProductosConStock(local_id): Obtiene todos los productos con su información completa, incluyendo el proveedor y el stock actual calculado como la suma de movimientos de entrada menos salida, filtrando por local si se indica.
+
+// Archivos relacionados:
+// - models/Producto.js: Modelo que representa la tabla productos.
+// - models/Lote.js: Modelo que representa los lotes vinculados a productos.
+// - models/Inventario.js: Modelo que representa los movimientos de inventario.
+// - routes/productoRoutes.js: Define rutas que utilizan esta función para exponer la información vía API.
+
+// Autor: Leonardo Dufrey Mejía Mejía, 23648
+// Última modificación: 20/07/2025
+
 const Producto = require('../models/Producto');
 const { raw } = require('objection');
 
