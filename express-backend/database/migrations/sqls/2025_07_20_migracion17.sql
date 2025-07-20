@@ -13,8 +13,8 @@ INSERT INTO Tipos_Movimientos_Inventario (nombre) VALUES
 -- Insertar lotes para productos:
 INSERT INTO lotes (id, producto_id, lote, fecha_vencimiento)
 VALUES
-  (1, 1, 'LOTE-001', '2024-12-31'),
-  (2, 2, 'LOTE-002', '2024-06-30');
+  (11, 1, 'LOTE-001', '2024-12-31'),
+  (12, 2, 'LOTE-002', '2024-06-30');
 
 -- Simular inventario con movimientos de entrada y salida:
 -- Entradas (compras)
