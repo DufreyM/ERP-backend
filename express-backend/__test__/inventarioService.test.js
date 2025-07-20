@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const inventarioRouter = require('../services/inventarioService'); // ajusta el path
+const inventarioRouter = require('../services/inventarioServices1'); 
 const Inventario = require('../models/Inventario');
 
 // Mocks y configuración de prueba

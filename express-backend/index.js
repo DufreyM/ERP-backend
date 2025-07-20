@@ -2,13 +2,14 @@ const express = require('express');
 const cors = require('cors');  
 require('dotenv').config();
 const Knex = require('knex');
-const {Model} = require('objection');
+const { Model } = require('objection');
 const knexConfig = require('./database/knexfile.js');
 const knex = Knex(knexConfig.development);
 Model.knex(knex);
 
 const authRouter = require('./services/mailService');
-const inventarioRouter = require('./services/inventarioService');
+const productoRouter = require('./routes/productoRoutes');
+const inventarioMovimientoRouter = require('./routes/inventarioRoutes');
 
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
@@ -22,29 +23,34 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: 'http://localhost:3001', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+  origin: 'http://localhost:3001', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 }));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 app.use('/auth', authRouter);
-app.use('/inventario', inventarioRouter); 
+app.use('/api/productos', productoRouter);
+app.use('/api/inventario-movimientos', inventarioMovimientoRouter);
+app.use('/api/roles', rolesRouter);
+app.use('/api/locales', localesRouter);
+app.use('/api/calendario', calendarioRouter);
+app.use('/documentos-locales', documentosLocalesRouter);
 
 app.get('/', async (req, res) => {
   try {
     const timestampResult = await knex.raw('SELECT NOW()');
-    const inventario = await Inventario.query()
-    const usuariosResult = await Usuario.query() 
-    const rolVisitador = await Rol.query().where('id','2')
+    const inventario = await Inventario.query();
+    const usuariosResult = await Usuario.query();
+    const rolVisitador = await Rol.query().where('id','2');
 
     res.json({
       message: 'API funcionando 🎉 con Objection.js + Knex',
       timestamp: timestampResult.rows[0].now,
       usuarios: usuariosResult,
       rolEspecífico: rolVisitador,
-      inventario : inventario
+      inventario: inventario
     });
   } catch (err) {
     console.error('Error en GET /:', err);
@@ -52,21 +58,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.use('/api/roles', rolesRouter);
-app.use('/api/locales', localesRouter);
-app.use('/api/calendario', calendarioRouter);
-
-// Endpoint para la pantalla de visitador médico
-app.get('/visitador-medico', (req, res) => {
-  res.json({ message: 'Aquí irá la pantalla de visitadores médicos.' });
-});
-
-app.get('/reset-password', (req, res) => {
-  res.json({ message: 'Aquí irá la pantalla de restablecer contraseña.' });
-});
-
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
-
-app.use('/documentos-locales', documentosLocalesRouter);
