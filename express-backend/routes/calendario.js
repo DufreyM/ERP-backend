@@ -17,19 +17,23 @@ router.get('/', authenticateToken, async (req, res) => {
             .whereNull('fecha_eliminado')
             .orderBy('fecha', 'asc');
 
+        // Filtrado por rango de fechas
         if (start && end) {
             query = query.whereBetween('fecha', [start, end]);
         }
 
+        // Filtrado por tipo de evento
         if (tipo_evento) {
             query = query.where('tipo_evento', tipo_evento);
         }
 
-        // Filtrado por local
-        if (usuario.rol_id !== 1) {
-            query = query.where('local_id', usuario.local_id);
-        } else if (local_id) {
+        // Lógica de filtrado por local
+        if (local_id) {
+            // Si se especifica un local_id en los query params, filtrar por ese local
             query = query.where('local_id', local_id);
+        } else if (usuario.rol_id !== 1) {
+            // Si no es admin y no se especificó local_id, filtrar por su local asignado
+            query = query.where('local_id', usuario.local_id);
         }
 
         // Filtrado por usuario (si no es admin)
