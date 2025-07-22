@@ -160,44 +160,96 @@ router.post('/', authenticateToken, async (req, res) => {
 
 // Actualizar evento
 router.put('/:id', authenticateToken, async (req, res) => {
+        try {
+            const usuario = req.user;
+            const evento = await Calendario.query().findById(req.params.id);
+            
+            // Verificar permisos
+            if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+                return res.status(403).json({ error: 'No tienes permiso para actualizar este evento' });
+            }
+
+            const updated = await Calendario.query()
+                .patchAndFetchById(req.params.id, req.body);
+            res.json(updated);
+        } catch (err) {
+            console.error('Error actualizando evento:', err);
+            res.status(500).json({ error: 'Error actualizando evento' });
+        }
+    });
+
+    // Ruta PUT para marcado como eliminado
+    router.put('/:id/marcar-eliminado', authenticateToken, async (req, res) => {
     try {
+        const { id } = req.params;
         const usuario = req.user;
-        const evento = await Calendario.query().findById(req.params.id);
-        
-        // Verificar permisos
-        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
-            return res.status(403).json({ error: 'No tienes permiso para actualizar este evento' });
+
+        // 1. Verificar que el evento existe
+        const evento = await Calendario.query().findById(id);
+        if (!evento) {
+        return res.status(404).json({ error: 'Evento no encontrado' });
         }
 
+        // 2. Verificar permisos
+        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+        return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        // 3. Actualizar SOLO la fecha_eliminado
         const updated = await Calendario.query()
-            .patchAndFetchById(req.params.id, req.body);
-        res.json(updated);
-    } catch (err) {
-        console.error('Error actualizando evento:', err);
-        res.status(500).json({ error: 'Error actualizando evento' });
-    }
-});
+        .patchAndFetchById(id, {
+            fecha_eliminado: new Date().toISOString()
+        });
 
-// Eliminar evento (soft delete)
-router.delete('/:id', authenticateToken, async (req, res) => {
-    try {
-        const usuario = req.user;
-        const evento = await Calendario.query().findById(req.params.id);
-        
-        // Verificar permisos
-        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
-            return res.status(403).json({ error: 'No tienes permiso para eliminar este evento' });
+        // 4. Verificar que se actualizó correctamente
+        if (!updated.fecha_eliminado) {
+        throw new Error('No se pudo marcar como eliminado');
         }
 
-        await Calendario.query()
-            .patchAndFetchById(req.params.id, { 
-                fecha_eliminado: new Date().toISOString() 
-            });
-        res.status(204).send();
-    } catch (err) {
-        console.error('Error eliminando evento:', err);
-        res.status(500).json({ error: 'Error eliminando evento' });
+        res.json({ 
+        success: true,
+        message: 'Evento marcado como eliminado',
+        data: updated
+        });
+
+    } catch (error) {
+        console.error('Error en marcar-eliminado:', error);
+        res.status(500).json({
+        error: 'Error al marcar el evento como eliminado',
+        details: error.message
+        });
     }
+
+    // Obtener eventos eliminados
+    router.get('/eliminados', authenticateToken, async (req, res) => {
+        try {
+            const usuario = req.user;
+            
+            let query = Calendario.query()
+                .withGraphFetched('[usuario, visitador, estado, local]')
+                .whereNotNull('fecha_eliminado')
+                .orderBy('fecha_eliminado', 'desc');
+
+            // Filtrado por local
+            if (usuario.rol_id !== 1) {
+                query = query.where('local_id', usuario.local_id);
+            }
+
+            // Filtrado por usuario (si no es admin)
+            if (usuario.rol_id !== 1) {
+                query = query.where('usuario_id', usuario.id);
+            }
+
+            const eventosEliminados = await query;
+            res.json(eventosEliminados);
+        } catch (err) {
+            console.error('Error obteniendo eventos eliminados:', err);
+            res.status(500).json({ 
+                error: 'Error obteniendo eventos eliminados',
+                detalles: err.message
+            });
+        }
+    });
 });
 
 module.exports = router;
