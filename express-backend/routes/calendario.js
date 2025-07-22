@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Calendario = require('../models/Calendario');
+const Estado_Calendario = require('../models/Estado_Calendario');
 const TipoEventoCalendario = require('../models/Tipo_Evento_Calendario');
 const knex = require('../database/knexfile').development;
 const authenticateToken = require('../middlewares/authMiddleware');
@@ -42,6 +43,20 @@ router.get('/', authenticateToken, async (req, res) => {
         console.error('Error obteniendo eventos del calendario:', err);
         res.status(500).json({ 
             error: 'Error obteniendo eventos del calendario',
+            detalles: err.message
+        });
+    }
+});
+
+// Nuevo endpoint para obtener estados de calendario
+router.get('/estados', authenticateToken, async (req, res) => {
+    try {
+        const estados = await Estado_Calendario.query();
+        res.json(estados);
+    } catch (err) {
+        console.error('Error obteniendo estados de calendario:', err);
+        res.status(500).json({ 
+            error: 'Error obteniendo estados de calendario',
             detalles: err.message
         });
     }
