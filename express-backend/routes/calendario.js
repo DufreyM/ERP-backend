@@ -53,7 +53,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Nuevo endpoint para obtener estados de calendario
-router.get('/estados', authenticateToken, async (req, res) => {
+router.get('/estados', async (req, res) => {
     try {
         const estados = await Estado_Calendario.query();
         res.json(estados);
