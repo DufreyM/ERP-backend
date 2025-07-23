@@ -134,4 +134,30 @@ router.get('/search', async (req, res) => {
     }
 });
 
+// GET /api/visitadores-medicos/por-local/:localId
+router.get('/por-local/:localId', async (req, res) => {
+  try {
+    const { localId } = req.params;
+
+    const visitadores = await VisitadorMedico.query()
+      .withGraphFetched('[usuario, proveedor]')
+      .whereExists(
+        VisitadorMedico.relatedQuery('usuario')
+          .where('id_local', localId)
+          .andWhere('status', 'activo')
+      );
+
+    const formatted = visitadores.map(v => ({
+      id: v.id,
+      nombre: `${v.usuario?.nombre || ''} ${v.usuario?.apellidos || ''}`.trim()
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('Error obteniendo visitadores por local:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;
