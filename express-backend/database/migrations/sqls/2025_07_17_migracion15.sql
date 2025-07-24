@@ -1,7 +1,4 @@
--- Añadir columna para el tipo de evento
-ALTER TABLE Calendario 
-ADD COLUMN tipo_evento VARCHAR(50) NOT NULL DEFAULT 'visita_medica',
-ADD COLUMN fecha_eliminado TIMESTAMP NULL;
+--correcion 24/07/25 por Renato R.
 
 -- Crear tabla para tipos de eventos si queremos mantenerlos normalizados
 CREATE TABLE Tipos_Evento_Calendario (
@@ -13,3 +10,12 @@ INSERT INTO Tipos_Evento_Calendario (nombre) VALUES
 ('visita_medica'),
 ('notificacion'),
 ('tarea');
+
+ALTER TABLE Calendario 
+ADD COLUMN tipo_evento_id INT NOT NULL DEFAULT 2,
+ADD COLUMN fecha_eliminado TIMESTAMP NULL;
+
+ALTER TABLE Calendario
+ADD CONSTRAINT fk_tipo_evento
+FOREIGN KEY (tipo_evento_id)
+REFERENCES Tipos_Evento_Calendario(id);

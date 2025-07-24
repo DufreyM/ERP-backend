@@ -12,7 +12,7 @@ class Calendario extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-      required: ['usuario_id', 'titulo', 'estado_id', 'fecha', 'tipo_evento', 'local_id'],
+      required: ['usuario_id', 'titulo', 'estado_id', 'fecha', 'tipo_evento_id', 'local_id'],
 
       properties: {
         id: { type: 'integer' },
@@ -23,7 +23,7 @@ class Calendario extends Model {
         detalles: { type: ['string', 'null'] },
         fecha: { type: 'string', format: 'date-time' },
         local_id: { type: 'integer' },
-        tipo_evento: { type: 'string', enum: ['visita_medica', 'notificacion', 'tarea'] },
+        tipo_evento_id: { type: 'integer' },
         fecha_eliminado: { type: ['string', 'null'], format: 'date-time' }
       }
     };
@@ -34,6 +34,7 @@ class Calendario extends Model {
     const VisitadorMedico = require('./Visitador_Medico')
     const EstadoCalendario = require('./Estado_Calendario')
     const Local = require('./Local')
+    const TipoEventoCalendario = require('./Tipo_Evento_Calendario')
 
     return {
       usuario: {
@@ -66,6 +67,14 @@ class Calendario extends Model {
         join: {
           from: 'calendario.local_id',
           to: 'locales.id'
+        }
+      },
+      tipoEvento: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: TipoEventoCalendario,
+        join: {
+          from: 'calendario.tipo_evento_id',
+          to: 'tipos_evento_calendario.id'
         }
       }
     };

@@ -7,21 +7,17 @@ exports.up = function(knex) {
 }
 
 exports.down = async function(knex) {
-  // 1. Eliminar la tabla de tipos de evento
+  // Primero eliminamos la restricción de clave foránea de la tabla Calendario
+  await knex.schema.alterTable('Calendario', function(table) {
+    table.dropForeign('tipo_evento_calendario_id', 'fk_tipo_evento')
+  })
+
+  // Luego eliminamos las columnas agregadas
+  await knex.schema.alterTable('Calendario', function(table) {
+    table.dropColumn('tipo_evento_calendario_id')
+    table.dropColumn('fecha_eliminado')
+  })
+
+  // Finalmente eliminamos la tabla Tipos_Evento_Calendario
   await knex.schema.dropTableIfExists('Tipos_Evento_Calendario')
-
-  // 2. Eliminar las columnas añadidas a la tabla Calendario
-  const hasTipoEvento = await knex.schema.hasColumn('Calendario', 'tipo_evento')
-  if (hasTipoEvento) {
-    await knex.schema.table('Calendario', (table) => {
-      table.dropColumn('tipo_evento')
-    })
-  }
-
-  const hasFechaEliminado = await knex.schema.hasColumn('Calendario', 'fecha_eliminado')
-  if (hasFechaEliminado) {
-    await knex.schema.table('Calendario', (table) => {
-      table.dropColumn('fecha_eliminado')
-    })
-  }
 }
