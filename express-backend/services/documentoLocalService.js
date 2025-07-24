@@ -17,21 +17,9 @@
 
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const DocumentoLocal = require('../models/DocumentoLocal');
 const path = require('path');
-
-// Configuración de multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const nombreUnico = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
-    cb(null, nombreUnico);
-  }
-});
-const upload = multer({ storage: storage });
+const cloudinary = require('../services/cloudinary');
 
 // Obtener todos los documentos activos
 router.get('/', async (req, res) => {
@@ -107,18 +95,25 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Crear nuevo documento
-router.post('/', upload.single('archivo'), async (req, res) => {
+// Crear nuevo documento (sin multer)
+router.post('/', async (req, res) => {
   try {
-    const archivoRuta = req.file
-      ? `/uploads/${req.file.filename}`
-      : req.body.archivo || null;
+    let archivoURL = null;
+
+    if (req.files?.archivo) {
+      const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
+        folder: 'documentos_locales'
+      });
+      archivoURL = resultado.secure_url;
+    } else if (req.body.archivo) {
+      archivoURL = req.body.archivo;
+    }
 
     const nuevo = await DocumentoLocal.query().insert({
       ...req.body,
       usuario_id: parseInt(req.body.usuario_id, 10),
       local_id: parseInt(req.body.local_id, 10),
-      archivo: archivoRuta,
+      archivo: archivoURL,
       creacion: new Date().toISOString(),
       updatedat: new Date().toISOString()
     });
@@ -129,20 +124,26 @@ router.post('/', upload.single('archivo'), async (req, res) => {
   }
 });
 
+
 // Actualizar documento
-router.put('/:id', upload.single('archivo'), async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const archivoRuta = req.file
-      ? `/uploads/${req.file.filename}`
-      : req.body.archivo || undefined;
+    let archivoURL = req.body.archivo;
+
+    if (req.files?.archivo) {
+      const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
+        folder: 'documentos_locales'
+      });
+      archivoURL = resultado.secure_url;
+    }
 
     const data = {
       ...req.body,
       updatedat: new Date().toISOString()
     };
 
-    if (archivoRuta !== undefined) {
-      data.archivo = archivoRuta;
+    if (archivoURL !== undefined) {
+      data.archivo = archivoURL;
     }
 
     const actualizado = await DocumentoLocal.query().patchAndFetchById(req.params.id, data);
@@ -153,6 +154,7 @@ router.put('/:id', upload.single('archivo'), async (req, res) => {
     res.status(400).json({ error: 'Error al actualizar el documento', details: err.message });
   }
 });
+
 
 // Eliminar documento (lógicamente)
 router.delete('/:id', async (req, res) => {

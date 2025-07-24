@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');  
+const fileUpload = require('express-fileupload');
 require('dotenv').config();
 const Knex = require('knex');
 const { Model } = require('objection');
@@ -27,6 +28,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
+
+
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 

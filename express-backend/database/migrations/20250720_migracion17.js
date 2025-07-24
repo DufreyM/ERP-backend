@@ -8,7 +8,7 @@ exports.up = function(knex) {
 };
 
 exports.down = async function(knex) {
-  // Revertir inserciones de tipos de movimientos
+  // Revertir inserciones de tipos de movimiento
   await knex('inventario').del();
   await knex('lotes').whereIn('id', [1, 2]).del();
   await knex('Tipos_Movimientos_Inventario')
