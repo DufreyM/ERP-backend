@@ -6,10 +6,17 @@ const TipoEventoCalendario = require('../models/Tipo_Evento_Calendario');
 const knex = require('../database/knexfile').development;
 const authenticateToken = require('../middlewares/authMiddleware');
 
+//funcion auxiliar - Renato R. 24/07/25
+async function getTipoEventoId(nombre) {
+  const tipo = await TipoEventoCalendario.query().findOne({ nombre });
+  if (!tipo) throw new Error(`Tipo de evento '${nombre}' no encontrado`);
+  return tipo.id;
+}
+
 // Obtener eventos filtrados por local y fecha
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { start, end, local_id, tipo_evento } = req.query;
+        const { start, end, local_id, tipo_evento_id } = req.query;
         const usuario = req.user;
         
         let query = Calendario.query()
@@ -23,8 +30,8 @@ router.get('/', authenticateToken, async (req, res) => {
         }
 
         // Filtrado por tipo de evento
-        if (tipo_evento) {
-            query = query.where('tipo_evento', tipo_evento);
+        if (tipo_evento_id) {
+            query = query.where('tipo_evento_id', tipo_evento_id);
         }
 
         // Lógica de filtrado por local
@@ -83,9 +90,10 @@ router.get('/notificaciones', authenticateToken, async (req, res) => {
         const { local_id } = req.query;
         const usuario = req.user;
         
+        let tipoEventoId = await getTipoEventoId('notificacion')
         let query = Calendario.query()
             .withGraphFetched('[usuario, estado, local]')
-            .where('tipo_evento', 'notificacion')
+            .where('tipo_evento_id', tipoEventoId)
             .whereNull('fecha_eliminado')
             .orderBy('fecha', 'asc');
 
@@ -118,10 +126,11 @@ router.get('/tareas', authenticateToken, async (req, res) => {
     try {
         const { local_id } = req.query;
         const usuario = req.user;
-        
+
+        let tipoEventoId = await getTipoEventoId('tarea')
         let query = Calendario.query()
             .withGraphFetched('[usuario, estado, local]')
-            .where('tipo_evento', 'tarea')
+            .where('tipo_evento_id', tipoEventoId)
             .whereNull('fecha_eliminado')
             .orderBy('fecha', 'asc');
 
@@ -154,8 +163,9 @@ router.post('/', authenticateToken, async (req, res) => {
     try {
         const usuario = req.user;
         
+        let tipoEventoId = await getTipoEventoId('visita_medica')
         // Validar según el tipo de evento
-        if (req.body.tipo_evento === 'visita_medica' && !req.body.visitador_id) {
+        if (req.body.tipo_evento_id === tipoEventoId && !req.body.visitador_id) {
             return res.status(400).json({ error: 'Las visitas médicas requieren un visitador' });
         }
 
