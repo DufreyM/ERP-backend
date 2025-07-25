@@ -102,7 +102,9 @@ router.post('/', async (req, res) => {
 
     if (req.files?.archivo) {
       const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
-        folder: 'documentos_locales'
+        folder: 'documentos_locales', 
+        resource_type: 'auto',
+        type: 'upload'
       });
       archivoURL = resultado.secure_url;
     } else if (req.body.archivo) {
@@ -132,7 +134,9 @@ router.put('/:id', async (req, res) => {
 
     if (req.files?.archivo) {
       const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
-        folder: 'documentos_locales'
+        folder: 'documentos_locales', 
+        resource_type: 'auto',
+        type: 'upload'
       });
       archivoURL = resultado.secure_url;
     }
