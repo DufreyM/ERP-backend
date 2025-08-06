@@ -19,6 +19,7 @@ const Inventario = require('./models/Inventario.js');
 const rolesRouter = require('./routes/roles');
 const localesRouter = require('./routes/locales');
 const calendarioRouter = require('./routes/calendario');
+const usuarioRoutes = require('./routes/profileRoutes')
 const documentosLocalesRouter = require('./services/documentoLocalService');
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api/locales', localesRouter);
 app.use('/api/calendario', calendarioRouter);
 app.use('/documentos-locales', documentosLocalesRouter);
 app.use('/api/visitadores-medicos', visitadorMedicoRouter);
+app.use('/api/usuario', usuarioRoutes);
 
 app.get('/', async (req, res) => {
   try {
