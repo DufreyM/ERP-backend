@@ -68,6 +68,10 @@ app.get('/', async (req, res) => {
   }
 });
 
+const visitadoresRouter = require('./routes/visitadoresRoutes');
+app.use('/visitadores', visitadoresRouter);
+
+
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });

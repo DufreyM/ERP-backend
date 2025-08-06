@@ -1,7 +1,7 @@
 // routes/visitadorMedicoRoutes.js
 const express = require('express');
 const router = express.Router();
-const VisitadorMedico = require('../models/Visitador_Medico');
+const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 
 // Obtener todos los visitadores médicos con sus relaciones
