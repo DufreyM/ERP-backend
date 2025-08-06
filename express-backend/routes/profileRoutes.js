@@ -1,3 +1,16 @@
+// Nombre del archivo: usuarioRoutes.js
+
+// Principales rutas y pequeña descripción de las mismas:
+// 1. GET /me: Obtiene la información del usuario autenticado utilizando el token JWT.
+
+// Archivos relacionados:
+// - models/Usuario.js: Modelo de datos para usuarios.
+// - middlewares/authMiddleware.js: Middleware para autenticar el token JWT.
+// - app.js o index.js: Punto de entrada donde se importa este router.
+
+// Autor: María José Girón, 23559
+// Última modificación: 06/08/2025
+
 const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middlewares/authMiddleware');
