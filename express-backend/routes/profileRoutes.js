@@ -12,7 +12,6 @@ router.get('/me',
             const usuario = await Usuario.query()
                 .findById(usuarioId)
                 .select('nombre', 'email', 'status', 'fechanacimiento', 'contrasena');
-
             
             if(!usuario) {
                 return res.status(404).json({ error: 'Usuario no encontrado' });

@@ -1,20 +1,15 @@
-// Nombre del archivo: productosRoutes.js
+// Nombre del archivo: usuarioRoutes.js
 
 // Principales rutas y pequeña descripción de las mismas:
-// 1. GET /con-stock: Obtiene todos los productos con su stock actual calculado, opcionalmente filtrado por local.
-// 2. GET /: Obtiene todos los productos sin filtros.
-// 3. GET /:id: Obtiene un producto por su ID.
-// 4. POST /: Crea un nuevo producto con los datos enviados.
-// 5. PUT /:id: Actualiza un producto existente por ID con los datos enviados.
-// 6. DELETE /:id: Elimina un producto por ID.
+// 1. GET /me: Obtiene la información del usuario autenticado utilizando el token JWT.
 
 // Archivos relacionados:
-// - models/Producto.js: Modelo de datos para productos.
-// - services/productoService.js: Servicio que contiene la lógica de negocio para obtener productos con stock.
+// - models/Usuario.js: Modelo de datos para usuarios.
+// - middlewares/authMiddleware.js: Middleware para autenticar el token JWT.
 // - app.js o index.js: Punto de entrada donde se importa este router.
 
-// Autor: Leonardo Dufrey Mejía Mejía, 23648
-// Última modificación: 20/07/2025
+// Autor: María José Girón, 23559
+// Última modificación: 06/08/2025
 
 
 const express = require('express');
