@@ -11,7 +11,6 @@ Model.knex(knex);
 const authRouter = require('./services/mailService');
 const productoRouter = require('./routes/productoRoutes');
 const inventarioMovimientoRouter = require('./routes/inventarioRoutes');
-const visitadorMedicoRouter = require('./routes/visitadorMedicoRoutes');1
 
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
@@ -69,6 +68,10 @@ app.get('/', async (req, res) => {
     res.status(500).send('Error al conectar con la base de datos');
   }
 });
+
+const visitadoresRouter = require('./routes/visitadoresRoutes');
+app.use('/visitadores', visitadoresRouter);
+
 
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);

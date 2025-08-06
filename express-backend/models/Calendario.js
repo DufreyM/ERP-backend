@@ -31,7 +31,7 @@ class Calendario extends Model {
 
   static get relationMappings() {
     const Usuario = require('./Usuario');
-    const VisitadorMedico = require('./Visitador_Medico')
+    const VisitadorMedico = require('./VisitadorMedico')
     const EstadoCalendario = require('./Estado_Calendario')
     const Local = require('./Local')
     const TipoEventoCalendario = require('./Tipo_Evento_Calendario')
