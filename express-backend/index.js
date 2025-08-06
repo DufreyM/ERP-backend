@@ -11,7 +11,6 @@ Model.knex(knex);
 const authRouter = require('./services/mailService');
 const productoRouter = require('./routes/productoRoutes');
 const inventarioMovimientoRouter = require('./routes/inventarioRoutes');
-const visitadorMedicoRouter = require('./routes/visitadorMedicoRoutes');1
 
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
@@ -46,7 +45,6 @@ app.use('/api/roles', rolesRouter);
 app.use('/api/locales', localesRouter);
 app.use('/api/calendario', calendarioRouter);
 app.use('/documentos-locales', documentosLocalesRouter);
-app.use('/api/visitadores-medicos', visitadorMedicoRouter);
 
 app.get('/', async (req, res) => {
   try {
