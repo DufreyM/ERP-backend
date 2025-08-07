@@ -153,12 +153,14 @@ router.get('/:id', async (req, res) => {
     if (!venta) {
       return res.status(404).json({ error: 'Venta no encontrada' });
     }
-    const fechaVenta = venta.inventario?.[0]?.fecha || null;
+    const ventaSinInventarios = { ...venta };
+    delete ventaSinInventarios.inventario;
 
     res.json({
-      ...venta,
-      fecha_venta: fechaVenta 
-    })
+      ...ventaSinInventarios,
+      fecha_venta: venta.inventario?.[0]?.fecha || null
+    });
+
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener la venta', detalles: error.message });
   }
@@ -192,12 +194,17 @@ router.get('/', async (req, res) => {
         });;
     }
 
-    const ventasConFecha = ventas.map(v => ({
-      ...v,
-      fecha_venta: v.inventario?.[0]?.fecha || null
-    }));
+     const ventasConFecha = ventas.map(v => {
+  const ventaSinInventarios = { ...v };
+  delete ventaSinInventarios.inventario;
 
-    res.json(ventasConFecha);
+  return {
+    ...ventaSinInventarios,
+    fecha_venta: v.inventario?.[0]?.fecha || null
+  };
+});
+
+res.json(ventasConFecha);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
