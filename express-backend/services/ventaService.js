@@ -145,13 +145,20 @@ router.get('/:id', async (req, res) => {
   try {
     const venta = await Venta.query()
       .findById(req.params.id)
-      .withGraphFetched('[cliente, detalles.[producto, lote]]'); 
+      .withGraphFetched('[cliente, detalles.[producto, lote],inventario]')
+      .modifyGraph('inventarios', (builder) => {
+        builder.select('fecha')
+      });
 
     if (!venta) {
       return res.status(404).json({ error: 'Venta no encontrada' });
     }
+    const fechaVenta = venta.inventarios?.[0]?.fecha || null;
 
-    res.json(venta);
+    res.json({
+      ...venta,
+      fecha_venta: fechaVenta 
+    })
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener la venta', detalles: error.message });
   }

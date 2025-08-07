@@ -25,6 +25,7 @@ class Venta extends Model {
   static get relationMappings() {
   const Cliente = require('./Cliente');
   const VentaDetalle = require('./VentaDetalle');
+  const Inventario = require('./Inventario')
 
   return {
     cliente: {
@@ -41,6 +42,14 @@ class Venta extends Model {
       join: {
         from: 'ventas.id',
         to: 'venta_detalle.venta_id' // ← ¡esta línea es clave!
+      }
+    },
+    inventario: {
+      relation: Model.HasManyRelation,
+      modelClass: Inventario,
+      join: {
+        from: 'ventas.id',
+        to: 'inventario.venta_id'
       }
     }
   };
