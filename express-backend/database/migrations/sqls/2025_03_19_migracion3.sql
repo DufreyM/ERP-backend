@@ -107,7 +107,7 @@ CREATE TABLE Lotes (
 
 CREATE TABLE Ventas (
   id SERIAL PRIMARY KEY,
-  cliente_id int NOT NULL,
+  cliente_id int,
   total numeric(10,2) NOT NULL,
   tipo_pago varchar NOT NULL CHECK ("tipo_pago" IN ('efectivo', 'tarjeta', 'transacción'))
 );

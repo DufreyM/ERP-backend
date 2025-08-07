@@ -21,6 +21,7 @@ const express = require('express');
 const router = express.Router();
 const Producto = require('../models/Producto');
 const { obtenerProductosConStock } = require('../services/productoService');
+const { buscarProductosConStock } = require('../services/productoService');
 
 // Obtener todos los productos con su stock
 router.get('/con-stock', async (req, res) => {
@@ -36,6 +37,19 @@ router.get('/con-stock', async (req, res) => {
 router.get('/', async (req, res) => {
   const productos = await Producto.query();
   res.json(productos);
+});
+
+
+router.get('/search', async (req, res) => {
+  const { query, local_id } = req.query;
+
+  try {
+    const productos = await buscarProductosConStock({ query, local_id });
+    res.json(productos);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al buscar productos', details: err.message });
+  }
 });
 
 router.get('/:id', async (req, res) => {
@@ -70,5 +84,6 @@ router.delete('/:id', async (req, res) => {
     res.status(400).json({ error: 'Error al eliminar producto', details: err.message });
   }
 });
+
 
 module.exports = router;

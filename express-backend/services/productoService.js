@@ -37,6 +37,28 @@ async function obtenerProductosConStock(local_id) {
   return productos;
 }
 
+async function buscarProductosConStock({ query, local_id }) {
+  const productos = await obtenerProductosConStock(local_id);
+
+  const filtro = query ? query.toLowerCase() : '';
+
+  return productos
+    .filter(p => p.stock_actual > 0)
+    .filter(p =>
+      p.nombre.toLowerCase().includes(filtro) ||
+      String(p.codigo).includes(filtro)
+    )
+    .map(p => ({
+      id: p.codigo,
+      nombre: p.nombre,
+      presentacion: p.presentacion,
+      precio: p.precioventa,
+      stock: p.stock_actual
+    }));
+}
+
+
 module.exports = {
   obtenerProductosConStock,
+  buscarProductosConStock
 };

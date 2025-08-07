@@ -12,10 +12,10 @@ class Venta extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-      required: ['cliente_id', 'total', 'tipo_pago'],
+      required: ['total', 'tipo_pago'],
       properties: {
         id: { type: 'integer' },
-        cliente_id: { type: 'integer' },
+        cliente_id: { type: ['integer', 'null']},
         total: { type: 'number', minimum: 0 },
         tipo_pago: { type: 'string', enum: ['efectivo', 'tarjeta', 'transacción'] }
       }
