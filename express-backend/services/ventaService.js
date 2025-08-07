@@ -146,14 +146,14 @@ router.get('/:id', async (req, res) => {
     const venta = await Venta.query()
       .findById(req.params.id)
       .withGraphFetched('[cliente, detalles.[producto, lote],inventario]')
-      .modifyGraph('inventarios', (builder) => {
+      .modifyGraph('inventario', (builder) => {
         builder.select('fecha')
       });
 
     if (!venta) {
       return res.status(404).json({ error: 'Venta no encontrada' });
     }
-    const fechaVenta = venta.inventarios?.[0]?.fecha || null;
+    const fechaVenta = venta.inventario?.[0]?.fecha || null;
 
     res.json({
       ...venta,
@@ -181,12 +181,23 @@ router.get('/', async (req, res) => {
 
       ventas = await Venta.query()
         .whereIn('id', ventaIds)
-        .withGraphFetched('[cliente, detalles.[producto, lote]]');
+        .withGraphFetched('[cliente, detalles.[producto, lote],inventario]')
+        .modifyGraph('inventario', (builder) => {
+          builder.select('fecha');
+        });
+
     } else {
-      ventas = await Venta.query().withGraphFetched('[cliente, detalles.[producto, lote]]');
+      ventas = await Venta.query().withGraphFetched('[cliente, detalles.[producto, lote],inventario]').modifyGraph('inventario', (builder) => {
+          builder.select('fecha');
+        });;
     }
 
-    res.json(ventas);
+    const ventasConFecha = ventas.map(v => ({
+      ...v,
+      fecha_venta: v.inventario?.[0]?.fecha || null
+    }));
+
+    res.json(ventasConFecha);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
