@@ -23,7 +23,7 @@ class Inventario extends Model {
       properties: {
         id: { type: 'integer' },
         lote_id: { type: 'integer' },
-        cantidad: { type: 'integer', minimum: 0 },
+        cantidad: { type: 'integer'},
         tipo_movimiento_id: { type: 'integer' },
         venta_id: { type: ['integer', 'null'] },
         compra_id: { type: ['integer', 'null'] },

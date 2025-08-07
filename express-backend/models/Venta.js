@@ -13,7 +13,6 @@ class Venta extends Model {
     return {
       type: 'object',
       required: ['cliente_id', 'total', 'tipo_pago'],
-
       properties: {
         id: { type: 'integer' },
         cliente_id: { type: 'integer' },
@@ -24,19 +23,29 @@ class Venta extends Model {
   }
 
   static get relationMappings() {
-    const Cliente = require('./Cliente');
+  const Cliente = require('./Cliente');
+  const VentaDetalle = require('./VentaDetalle');
 
-    return {
-      cliente: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: Cliente,
-        join: {
-          from: 'ventas.cliente_id',
-          to: 'clientes.id'
-        }
+  return {
+    cliente: {
+      relation: Model.BelongsToOneRelation,
+      modelClass: Cliente,
+      join: {
+        from: 'ventas.cliente_id',
+        to: 'clientes.id'
       }
-    };
-  }
+    },
+    detalles: {
+      relation: Model.HasManyRelation,
+      modelClass: VentaDetalle,
+      join: {
+        from: 'ventas.id',
+        to: 'venta_detalle.venta_id' // ← ¡esta línea es clave!
+      }
+    }
+  };
 }
 
-module.exports = Venta
+}
+
+module.exports = Venta;
