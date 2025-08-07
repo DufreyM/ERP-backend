@@ -10,8 +10,7 @@ Model.knex(knex);
 
 const authRouter = require('./services/mailService');
 const productoRouter = require('./routes/productoRoutes');
-const inventarioMovimientoRouter = require('./routes/inventarioRoutes');
-
+const inventarioMovimientoRouter = require('./routes/inventarioRoutes'); 
 const Usuario = require('./models/Usuario.js');
 const Rol = require('./models/Rol.js');
 const Inventario = require('./models/Inventario.js');
@@ -19,7 +18,6 @@ const rolesRouter = require('./routes/roles');
 const localesRouter = require('./routes/locales');
 const calendarioRouter = require('./routes/calendario');
 const documentosLocalesRouter = require('./services/documentoLocalService');
-
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -69,6 +67,8 @@ app.get('/', async (req, res) => {
 const visitadoresRouter = require('./routes/visitadoresRoutes');
 app.use('/visitadores', visitadoresRouter);
 
+const ventaRouter = require('./services/ventaService'); 
+app.use('/ventas', ventaRouter);
 
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
