@@ -46,7 +46,6 @@ app.use('/api/roles', rolesRouter);
 app.use('/api/locales', localesRouter);
 app.use('/api/calendario', calendarioRouter);
 app.use('/documentos-locales', documentosLocalesRouter);
-app.use('/api/visitadores-medicos', visitadorMedicoRouter);
 app.use('/api/usuario', usuarioRoutes);
 
 app.get('/', async (req, res) => {

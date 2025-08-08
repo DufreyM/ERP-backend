@@ -24,7 +24,7 @@ router.get('/me',
 
             const usuario = await Usuario.query()
                 .findById(usuarioId)
-                .select('nombre', 'email', 'status', 'fechanacimiento', 'contrasena');
+                .select('nombre', 'apellidos', 'email', 'status', 'fechanacimiento', 'contrasena');
             
             if(!usuario) {
                 return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -37,5 +37,35 @@ router.get('/me',
         }
     }
 )
+
+router.patch('/me',
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const usuarioId = req.user.id;
+            const camposPermitidos = ['nombre', 'apellidos', 'email', 'fechanacimiento'];
+            const datosActualizados = {};
+
+            camposPermitidos.forEach(campo => {
+                if (req.body[campo] !== undefined) {
+                    datosActualizados[campo] = req.body[campo];
+                }
+            });
+
+            if (Object.keys(datosActualizados).length === 0) {
+                return res.status(400).json({ error: 'No se proporcionaron campos válidos para actualizar' });
+            }
+
+            const usuarioActualizado = await Usuario.query()
+                .patchAndFetchById(usuarioId, datosActualizados)
+                .select('nombre', 'apellidos', 'email', 'status', 'fechanacimiento');
+
+            res.json(usuarioActualizado);
+        } catch (err) {
+            console.error('Error al actualizar el usuario:', err);
+            res.status(500).json({ error: 'Error al actualizar la información del usuario' });
+        }
+    }
+);
 
 module.exports = router;
