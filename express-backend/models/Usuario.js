@@ -20,7 +20,7 @@ class Usuario extends Model {
         rol_id: { type: 'integer' },
         email: { type: 'string' },
         status: { type: 'string', enum: ['activo', 'inactivo'] },
-        local: { type: ['integer', 'null'] }, 
+        localInfo: { type: ['integer', 'null'] }, 
         contrasena: { type: 'string' },
         fechanacimiento: { type: 'string', format: 'date' },
         creacion: { type: 'string', format: 'date-time' },
@@ -46,7 +46,7 @@ class Usuario extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Local,
         join: {
-          from: 'usuarios.local',
+          from: 'usuarios.id_local',
           to: 'locales.id'
         }
       }
