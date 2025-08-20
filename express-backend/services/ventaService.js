@@ -145,20 +145,22 @@ router.get('/:id', async (req, res) => {
   try {
     const venta = await Venta.query()
       .findById(req.params.id)
-      .withGraphFetched('[cliente, detalles.[producto, lote],inventario]')
+      .withGraphFetched('[cliente, detalles.[producto, lote],inventario.encargado]')
       .modifyGraph('inventario', (builder) => {
-        builder.select('fecha')
+        builder.select('fecha','encargado_id')
       });
 
     if (!venta) {
       return res.status(404).json({ error: 'Venta no encontrada' });
     }
-    const ventaSinInventarios = { ...venta };
-    delete ventaSinInventarios.inventario;
+    const { inventario, ...ventaSinInventarios } = venta;
+    const fecha_venta = inventario?.[0]?.fecha || null;
+    const encargado = inventario?.[0]?.encargado || null;
 
     res.json({
       ...ventaSinInventarios,
-      fecha_venta: venta.inventario?.[0]?.fecha || null
+      fecha_venta,
+      encargado
     });
 
   } catch (error) {
@@ -183,29 +185,30 @@ router.get('/', async (req, res) => {
 
       ventas = await Venta.query()
         .whereIn('id', ventaIds)
-        .withGraphFetched('[cliente, detalles.[producto, lote],inventario]')
+        .withGraphFetched('[cliente, detalles.[producto, lote],inventario.encargado]')
         .modifyGraph('inventario', (builder) => {
-          builder.select('fecha');
+          builder.select('fecha','encargado_id');
         });
 
     } else {
-      ventas = await Venta.query().withGraphFetched('[cliente, detalles.[producto, lote],inventario]').modifyGraph('inventario', (builder) => {
-          builder.select('fecha');
+      ventas = await Venta.query().withGraphFetched('[cliente, detalles.[producto, lote],inventario.encargado]').modifyGraph('inventario', (builder) => {
+          builder.select('fecha','encargado_id');
         });;
     }
 
-     const ventasConFecha = ventas.map(v => {
-  const ventaSinInventarios = { ...v };
-  delete ventaSinInventarios.inventario;
+    const ventasConFechaYEncargado = ventas.map(v => {
+    const { inventario, ...ventaSinInventario } = v
+      return {
+        ...ventaSinInventario,
+        fecha_venta: inventario?.[0]?.fecha || null,
+        encargado: inventario?.[0]?.encargado || null
+      }
+    })
 
-  return {
-    ...ventaSinInventarios,
-    fecha_venta: v.inventario?.[0]?.fecha || null
-  };
-});
+    res.json(ventasConFechaYEncargado)
+} 
 
-res.json(ventasConFecha);
-  } catch (error) {
+catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
   }
