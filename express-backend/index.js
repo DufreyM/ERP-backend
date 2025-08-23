@@ -75,3 +75,6 @@ app.use('/ventas', ventaRouter);
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
+
+const clientesRouter = require('./routes/Clientes');   // <= NUEVO
+app.use('/clientes', clientesRouter);              // <= NUEVO
