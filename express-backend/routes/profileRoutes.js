@@ -15,6 +15,7 @@ const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middlewares/authMiddleware');
 const Usuario = require('../models/Usuario');
+const cloudinary = require('../services/cloudinary')
 
 router.get('/me',
     authenticateToken,
@@ -64,6 +65,74 @@ router.patch('/me',
         } catch (err) {
             console.error('Error al actualizar el usuario:', err);
             res.status(500).json({ error: 'Error al actualizar la información del usuario' });
+        }
+    }
+);
+
+router.post('/me/upload-pfp',
+    authenticateToken,
+    async (req, res) => {
+        try {
+            // Si no hay archivo
+            if (!req.files || !req.files.file) {
+                return res.status(400).json({ error: 'No hay foto adjuntada.' });
+            }
+
+            const archivo = req.files.file;
+            const usuarioId = req.user.id;
+            const usuario = await Usuario.query().findById(usuarioId);
+
+            if (usuario.foto_public_id) {
+                await cloudinary.uploader.destroy(usuario.foto_public_id);
+            }
+
+            // Subir a Cloudinary
+            const result = await cloudinary.uploader.upload(archivo.tempFilePath, {
+                folder: 'usuarios/perfil'
+            });
+
+            // Guardar URL en BD
+            const usuarioActualizado = await Usuario.query()
+                .patchAndFetchById(usuarioId, { foto_perfil: result.secure_url, foto_public_id: result.public_id })
+                .select('id', 'nombre', 'apellidos', 'email', 'foto_perfil');
+
+            res.json({
+                message: 'Foto de perfil actualizada con éxito.',
+                usuario: usuarioActualizado
+            });
+
+        } catch (error) {
+            console.error('Ocurrió algo inesperado al subir la foto de perfil:', error);
+            res.status(500).json({ error: 'Error al subir foto de perfil' });
+        }
+    }
+);
+
+router.get('/me/foto-perfil',
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const usuarioId = req.user.id;
+
+            const usuario = await Usuario.query()
+                .findById(usuarioId)
+                .select('id', 'nombre', 'apellidos', 'foto_perfil');
+
+            if (!usuario) {
+                return res.status(404).json({ error: 'Usuario no encontrado' });
+            }
+
+            if (!usuario.foto_perfil) {
+                return res.status(404).json({ error: 'El usuario no tiene foto de perfil' });
+            }
+
+            res.json({
+                foto_perfil: usuario.foto_perfil
+            });
+
+        } catch (err) {
+            console.error('Error al obtener la foto de perfil:', err);
+            res.status(500).json({ error: 'Error al obtener la foto de perfil' });
         }
     }
 );
