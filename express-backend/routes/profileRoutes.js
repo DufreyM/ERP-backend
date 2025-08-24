@@ -88,7 +88,9 @@ router.post('/me/upload-pfp',
 
             // Subir a Cloudinary
             const result = await cloudinary.uploader.upload(archivo.tempFilePath, {
-                folder: 'usuarios/perfil'
+                folder: 'usuarios/perfil',
+                public_id: `usuario_${usuarioId}`,
+                overwrite: true
             });
 
             // Guardar URL en BD
@@ -114,21 +116,40 @@ router.get('/me/foto-perfil',
         try {
             const usuarioId = req.user.id;
 
-            const usuario = await Usuario.query()
+            let usuario = await Usuario.query()
                 .findById(usuarioId)
-                .select('id', 'nombre', 'apellidos', 'foto_perfil');
+                .select('id', 'nombre', 'apellidos', 'email', 'status', 'fechanacimiento', 'foto_perfil', 'foto_public_id');
 
             if (!usuario) {
                 return res.status(404).json({ error: 'Usuario no encontrado' });
             }
 
-            if (!usuario.foto_perfil) {
-                return res.status(404).json({ error: 'El usuario no tiene foto de perfil' });
+            try {
+                // Buscar en Cloudinary si existe
+                const resource = await cloudinary.api.resource(`usuarios/perfil/usuario_${usuarioId}`, {
+                    type: 'upload'
+                });
+
+                if (resource && resource.secure_url) {
+                    const updates = {};
+
+                    if (usuario.foto_perfil !== resource.secure_url) {
+                        updates.foto_perfil = resource.secure_url;
+                    }
+                    if (usuario.foto_public_id !== resource.public_id) {
+                        updates.foto_public_id = resource.public_id;
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        usuario = await Usuario.query().patchAndFetchById(usuarioId, updates);
+                    }
+                }
+            } catch (errorC) {
+                console.warn(`No se encontró imagen en cloudinary para usuario_${usuarioId}`, errorC.message);
             }
 
-            res.json({
-                foto_perfil: usuario.foto_perfil
-            });
+            const { foto_perfil } = usuario;
+            res.json({ foto_perfil });
 
         } catch (err) {
             console.error('Error al obtener la foto de perfil:', err);
