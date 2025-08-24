@@ -2,14 +2,18 @@
 
 // Principales rutas y pequeña descripción de las mismas:
 // 1. GET /me: Obtiene la información del usuario autenticado utilizando el token JWT.
+// 2. PATCH /me: Actualiza ciertos campos permitidos del usuario autenticado.
+// 3. POST /me/upload-pfp: Sube una nueva foto de perfil del usuario a Cloudinary, elimina la anterior si existe y actualiza la referencia en la base de datos.
+// 4. GET /me/foto-perfil: Verifica en Cloudinary si existe la foto de perfil del usuario. Si la encuentra, actualiza la base de datos y devuelve la URL de la foto.
 
 // Archivos relacionados:
 // - models/Usuario.js: Modelo de datos para usuarios.
 // - middlewares/authMiddleware.js: Middleware para autenticar el token JWT.
 // - app.js o index.js: Punto de entrada donde se importa este router.
+// - services/cloudinary.js: Configuración y cliente de Cloudinary.
 
 // Autor: María José Girón, 23559
-// Última modificación: 06/08/2025
+// Última modificación: 23/08/2025
 
 const express = require('express');
 const router = express.Router();
@@ -73,7 +77,6 @@ router.post('/me/upload-pfp',
     authenticateToken,
     async (req, res) => {
         try {
-            // Si no hay archivo
             if (!req.files || !req.files.file) {
                 return res.status(400).json({ error: 'No hay foto adjuntada.' });
             }
@@ -82,20 +85,31 @@ router.post('/me/upload-pfp',
             const usuarioId = req.user.id;
             const usuario = await Usuario.query().findById(usuarioId);
 
+            // El public_id correcto incluye la carpeta
+            const publicId = `usuarios/perfil/usuario_${usuarioId}`;
+
+            // Borrar la foto anterior si existe
             if (usuario.foto_public_id) {
-                await cloudinary.uploader.destroy(usuario.foto_public_id);
+                try {
+                    await cloudinary.uploader.destroy(usuario.foto_public_id);
+                } catch (err) {
+                    console.warn("No se pudo borrar la foto anterior:", err.message);
+                }
             }
 
-            // Subir a Cloudinary
+            // Subir nueva foto
             const result = await cloudinary.uploader.upload(archivo.tempFilePath, {
                 folder: 'usuarios/perfil',
                 public_id: `usuario_${usuarioId}`,
                 overwrite: true
             });
 
-            // Guardar URL en BD
+            // Guardar nueva URL en BD
             const usuarioActualizado = await Usuario.query()
-                .patchAndFetchById(usuarioId, { foto_perfil: result.secure_url, foto_public_id: result.public_id })
+                .patchAndFetchById(usuarioId, {
+                    foto_perfil: result.secure_url,
+                    foto_public_id: result.public_id
+                })
                 .select('id', 'nombre', 'apellidos', 'email', 'foto_perfil');
 
             res.json({
