@@ -7,7 +7,7 @@
         "dev": "nodemon index.js",
         "migrate": "knex migrate:latest",
         "start": "node express-backend/index.js",
-        "test": "jest"
+        "test": "jest --coverage --verbose"
     },
     "dependencies": {
         "bcryptjs": "^3.0.2",

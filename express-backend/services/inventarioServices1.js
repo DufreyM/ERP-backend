@@ -17,7 +17,6 @@
 
 // Última modificación: 12/05/2025
 
-
 const express = require('express');
 const router = express.Router();
 const Inventario = require('../models/Inventario');
