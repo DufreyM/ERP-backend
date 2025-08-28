@@ -22,6 +22,30 @@ class Proveedor extends Model {
       }
     };
   }
+
+  static get relationMappings() {
+  const Telefono = require('./Telefono');
+  const VisitadorMedico = require('./VisitadorMedico');
+
+  return {
+    telefonos: {
+      relation: Model.HasManyRelation,
+      modelClass: Telefono,
+      join: {
+        from: 'proveedores.id',
+        to: 'telefonos.proveedor_id'
+      }
+    },
+    visitadores: {
+      relation: Model.HasManyRelation,
+      modelClass: VisitadorMedico,
+      join: {
+        from: 'proveedores.id',
+        to: 'visitadores_medicos.proveedor_id'
+      }
+    }
+  };
+}
 }
 
 module.exports = Proveedor

@@ -27,7 +27,7 @@ const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 
 // Helper para relaciones por defecto
-const RELACIONES = '[usuario, proveedor]';
+const RELACIONES = '[usuario, proveedor, telefonos]';
 
 // Obtener todos los visitadores médicos
 router.get('/', async (req, res) => {
@@ -127,6 +127,10 @@ router.get('/search', async (req, res) => {
 // Crear nuevo visitador médico
 router.post('/', async (req, res) => {
   try {
+    if (req.body.usuario) {
+      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
+    }
+
     const nuevo = await VisitadorMedico.query().insertGraph(req.body);
     res.status(201).json(nuevo);
   } catch (err) {
@@ -142,6 +146,17 @@ router.put('/:id', async (req, res) => {
     res.json(actualizado);
   } catch (err) {
     res.status(400).json({ error: 'Error al actualizar visitador médico', details: err.message });
+  }
+});
+
+router.get('/:id/telefonos', async (req, res) => {
+  try {
+    const telefonos = await VisitadorMedico.relatedQuery('telefonos')
+      .for(req.params.id);
+
+    res.json(telefonos);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener teléfonos', details: err.message });
   }
 });
 

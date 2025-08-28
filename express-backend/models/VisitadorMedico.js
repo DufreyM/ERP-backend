@@ -25,6 +25,7 @@ class VisitadorMedico extends Model {
   static get relationMappings() {
     const Usuario = require('./Usuario');
     const Proveedor = require('./Proveedor');
+    const Telefono = require('./Telefono');
 
     return {
       usuario: {
@@ -41,6 +42,14 @@ class VisitadorMedico extends Model {
         join: {
           from: 'visitadores_medicos.proveedor_id',
           to: 'proveedores.id'
+        }
+      },
+        telefonos: {
+        relation: Model.HasManyRelation,
+        modelClass: Telefono,
+        join: {
+          from: 'visitadores_medicos.id',
+          to: 'telefonos.visitador_id'
         }
       }
     };

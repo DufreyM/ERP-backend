@@ -72,6 +72,9 @@ app.use('/visitadores', visitadoresRouter);
 const ventaRouter = require('./services/ventaService'); 
 app.use('/ventas', ventaRouter);
 
+const proveedorRoutes = require('./routes/proveedorRoutes');
+app.use('/api/proveedor', proveedorRoutes);
+
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
