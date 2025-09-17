@@ -75,6 +75,9 @@ app.use('/ventas', ventaRouter);
 const proveedorRoutes = require('./routes/proveedorRoutes');
 app.use('/api/proveedor', proveedorRoutes);
 
+const empleadosRoutes = require('./routes/empleadoRoutes');
+app.use('/api/empleados', empleadosRoutes);
+
 app.listen(port, () => {
   console.log(`🚀 Servidor Express en http://localhost:${port}`);
 });
