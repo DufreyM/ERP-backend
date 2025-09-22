@@ -10,6 +10,8 @@
 // 7. router.post('/request-password-reset'): Ruta que recibe el email del usuario y genera un token para cambio de contraseña. Luego, envía un correo con un enlace para restablecerla.
 // 8. router.get('/verify-reset'): Ruta que valida el token de reseteo de contraseña antes de permitir el cambio.
 // 9. router.post('/reset-password'): Ruta que actualiza la contraseña del usuario si el token es válido. También elimina el token después del uso.
+// 10. router.post('/change-password'): Ruta para cambiar contraseña con autenticación JWT
+
 
 // Archivos relacionados:
 // - .env: Contiene las credenciales necesarias para la configuración del servicio de correo (Gmail o MailTrap) y la clave secreta para JWT.
@@ -389,5 +391,78 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Error al iniciar sesión' });
     }
 });
+
+async function sendPasswordChangedEmail(to) {
+    const mailOptions = {
+        from: 'econofarmafarmacias@gmail.com',
+        to,
+        subject: 'Contraseña actualizada',
+        html: `
+            <strong><p>Se ha cambiado tu contraseña exitosamente.</p></strong>
+            <p>Si no realizaste este cambio, por favor contacta al administrador inmediatamente.</p>
+            <br>
+            <p>Fecha y hora: ${new Date().toLocaleString()}</p>
+        `
+    };
+
+    await transporter.sendMail(mailOptions);
+}
+
+router.post('/change-password', 
+    authenticateToken,  // Middleware que verifica el token JWT
+    async (req, res) => {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id; // Extraído del token JWT
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ 
+                error: 'Contraseña actual y nueva contraseña son requeridas.' 
+            });
+        }
+
+        if (currentPassword === newPassword) {
+            return res.status(400).json({ 
+                error: 'La nueva contraseña no puede ser igual a la actual.' 
+            });
+        }
+
+        try {
+            // Buscar el usuario por ID
+            const usuario = await Usuario.query().findById(userId);
+
+            if (!usuario) {
+                return res.status(404).json({ error: 'Usuario no encontrado.' });
+            }
+
+            // Verificar que la contraseña actual sea correcta
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, usuario.contrasena);
+            
+            if (!isCurrentPasswordValid) {
+                return res.status(401).json({ error: 'Contraseña actual incorrecta.' });
+            }
+
+            // Hashear la nueva contraseña
+            const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+            // Actualizar la contraseña en la base de datos
+            await Usuario.query()
+                .patch({
+                    contrasena: hashedNewPassword,
+                })
+                .where({ id: userId });
+
+            // Enviar correo de notificación
+            await sendPasswordChangedEmail(usuario.email);
+
+            res.status(200).json({ 
+                message: 'Contraseña cambiada exitosamente. Se ha enviado una notificación a tu correo.' 
+            });
+
+        } catch (err) {
+            console.error('Error al cambiar contraseña:', err);
+            res.status(500).json({ error: 'Error interno al cambiar la contraseña.' });
+        }
+    }
+);
 
 module.exports = router;
