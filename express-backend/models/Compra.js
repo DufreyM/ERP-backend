@@ -29,6 +29,7 @@ class Compra extends Model {
     static get relationMappings() {
       const Usuario = require('./Usuario');
       const Proveedor = require('./Proveedor');
+      const PagoCompra = require('./PagoCompra')
   
       return {
         usuario: {
@@ -45,6 +46,14 @@ class Compra extends Model {
           join: {
             from: 'compras.proveedor_id',
             to: 'proveedores.id'
+          }
+        },
+         pagos: {
+          relation: Model.HasManyRelation,
+          modelClass: PagoCompra,
+          join: {
+            from: 'compras.id',
+            to: 'pagos_compras.compra_id'
           }
         }
       };
