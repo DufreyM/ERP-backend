@@ -55,6 +55,17 @@ class Compra extends Model {
             from: 'compras.id',
             to: 'pagos_compras.compra_id'
           }
+        },
+        productos: {
+          relation: Model.HasManyRelation,
+          modelClass: require('./Inventario'),
+          join: {
+            from: 'compras.id',
+            to: 'inventario.compra_id'
+          },
+          modify: (builder) => {
+            builder.withGraphFetched('lote.producto');
+          }
         }
       };
     }

@@ -7,7 +7,7 @@ const Lote = require('../models/Lote')
 const Producto = require('../models/Producto');
 const authenticateToken = require('../middlewares/authMiddleware');
 
-router.use(authenticateToken);
+// router.use(authenticateToken);
 
 
 router.get('/', async (req, res) => {
@@ -26,9 +26,10 @@ router.get('/', async (req, res) => {
 
       compras = await Compra.query()
         .whereIn('id', compraIds)
-        .withGraphFetched('[usuario, proveedor, pagos]');
+        .withGraphFetched('[usuario, proveedor, pagos, productos.lote.producto]')
     } else {
-      compras = await Compra.query().withGraphFetched('[usuario, proveedor, pagos]');
+      compras = await Compra.query().withGraphFetched('[usuario, proveedor, pagos, productos.lote.producto]')
+
     }
 
     res.json(compras);
