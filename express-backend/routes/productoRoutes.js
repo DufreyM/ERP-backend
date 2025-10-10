@@ -3,6 +3,8 @@ const router = express.Router();
 const Producto = require('../models/Producto');
 const { obtenerProductosConStock } = require('../services/productoService');
 const { buscarProductosConStock } = require('../services/productoService');
+const authenticateToken = require('../middlewares/authMiddleware');
+router.use(authenticateToken);
 
 // Obtener todos los productos con su stock
 router.get('/con-stock', async (req, res) => {

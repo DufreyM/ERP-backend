@@ -21,6 +21,8 @@
 const express = require('express');
 const router = express.Router();
 const Inventario = require('../models/Inventario');
+const authenticateToken = require('../middlewares/authMiddleware');
+router.use(authenticateToken);
 
 // Obtener todo el inventario
 router.get('/', async (req, res) => {

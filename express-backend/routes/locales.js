@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Local = require('../models/Local');
 
+
 router.get('/', async (req, res) => {
     try {
         const locales = await Local.query().select('id', 'nombre');

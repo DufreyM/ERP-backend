@@ -26,6 +26,9 @@ const router = express.Router();
 const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 
+const authenticateToken = require('../middlewares/authMiddleware');
+router.use(authenticateToken);
+
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
 
