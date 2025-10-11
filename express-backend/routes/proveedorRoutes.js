@@ -7,6 +7,10 @@ const Visitador = require('../models/VisitadorMedico');
 // Relaciones a traer por defecto
 const RELACIONES = '[telefonos, visitadores]';
 
+const auth = require('../middlewares/authMiddleware');
+
+router.use(auth);
+
 // 📌 Obtener todos los proveedores
 router.get('/', async (req, res) => {
   try {

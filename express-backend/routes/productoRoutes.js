@@ -4,6 +4,10 @@ const Producto = require('../models/Producto');
 const { obtenerProductosConStock } = require('../services/productoService');
 const { buscarProductosConStock } = require('../services/productoService');
 
+const auth = require('../middlewares/authMiddleware');
+
+router.use(auth);
+
 // Obtener todos los productos con su stock
 router.get('/con-stock', async (req, res) => {
   try {

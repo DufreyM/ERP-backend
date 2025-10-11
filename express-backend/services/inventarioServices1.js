@@ -17,6 +17,9 @@
 
 // Última modificación: 12/05/2025
 
+const auth = require('../middlewares/authMiddleware');
+
+router.use(auth);
 
 const express = require('express');
 const router = express.Router();

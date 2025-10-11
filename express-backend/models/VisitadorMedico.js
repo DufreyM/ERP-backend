@@ -1,8 +1,13 @@
-const { Model } = require('objection');
+const { Model, raw } = require('objection');
 
 class VisitadorMedico extends Model {
-  static get tableName() { return 'visitadores_medicos'; }
-  static get idColumn() { return 'id'; }
+  static get tableName() {
+    return 'visitadores_medicos';
+  }
+
+  static get idColumn() {
+    return 'id';
+  }
 
   static get jsonSchema() {
     return {
@@ -10,7 +15,7 @@ class VisitadorMedico extends Model {
       properties: {
         id: { type: 'integer' },
         proveedor_id: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
-        usuario_id:   { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+        usuario_id: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
         telefonos: {
           anyOf: [{ type: 'array', items: { type: 'string' } }, { type: 'null' }]
         },
@@ -33,7 +38,10 @@ class VisitadorMedico extends Model {
       usuario: {
         relation: Model.BelongsToOneRelation,
         modelClass: Usuario,
-        join: { from: 'visitadores_medicos.usuario_id', to: 'usuarios.id' }
+        join: {
+          from: 'visitadores_medicos.usuario_id',
+          to: 'usuarios.id'
+        }
       },
       proveedor: {
         relation: Model.BelongsToOneRelation,
@@ -43,14 +51,30 @@ class VisitadorMedico extends Model {
           to: 'proveedores.id'
         }
       },
-        telefonos: {
+      telefonos: {
         relation: Model.HasManyRelation,
         modelClass: Telefono,
         join: {
           from: 'visitadores_medicos.id',
           to: 'telefonos.visitador_id'
-        },
-        join: { from: 'visitadores_medicos.proveedor_id', to: 'proveedores.id' }
+        }
+      }
+    };
+  }
+
+  // Opcional: un modifier para traer solo los campos que necesitas del usuario
+  static get modifiers() {
+    return {
+      selectUsuarioDatos(builder) {
+        builder.select(
+          'id',
+          'nombre',
+          'apellidos',
+          'correo',
+          'telefono_fijo',
+          'telefono_movil',
+          'fecha_nacimientoISO'
+        );
       }
     };
   }
