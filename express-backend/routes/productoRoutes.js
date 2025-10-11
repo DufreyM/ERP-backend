@@ -6,10 +6,6 @@ const { buscarProductosConStock } = require('../services/productoService');
 const authenticateToken = require('../middlewares/authMiddleware');
 router.use(authenticateToken);
 
-const auth = require('../middlewares/authMiddleware');
-
-router.use(auth);
-
 // Obtener todos los productos con su stock
 router.get('/con-stock', async (req, res) => {
   try {

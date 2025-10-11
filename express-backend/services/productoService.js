@@ -24,17 +24,26 @@ async function obtenerProductosConStock(local_id) {
     .modifyGraph('proveedor', builder => {
       builder.select('id', 'nombre');
     })
+    // Agregamos subconsulta para stock actual
     .select(
-      raw(`
-        COALESCE((
-          SELECT SUM(i.cantidad)
-          FROM inventario i
-          JOIN lotes l ON l.id = i.lote_id
-          WHERE l.producto_id = productos.codigo
-          ${local_id ? `AND i.local_id = ${local_id}` : ''}
-        ), 0) AS stock_actual
-      `)
-    );
+      raw(`COALESCE((
+        SELECT SUM(i.cantidad)
+        FROM inventario i
+        JOIN lotes l ON l.id = i.lote_id
+        WHERE l.producto_id = productos.codigo
+        ${local_id ? `AND i.local_id = ${local_id}` : ''}
+      ), 0) AS stock_actual`)
+    )
+    // Agregamos subconsulta para fecha de vencimiento más cercana
+    .select(
+      raw(`(
+        SELECT MIN(l.fecha_vencimiento)
+        FROM lotes l
+        WHERE l.producto_id = productos.codigo
+      ) AS fecha_vencimiento_mas_cercana`)
+    )
+    // Ordenamos por esa fecha
+    .orderByRaw('fecha_vencimiento_mas_cercana ASC NULLS LAST');
 
   return productos;
 }
