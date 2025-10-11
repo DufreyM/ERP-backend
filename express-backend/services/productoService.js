@@ -14,8 +14,6 @@
 
 const Producto = require('../models/Producto');
 const { raw } = require('objection');
-const authenticateToken = require('../middlewares/authMiddleware');
-router.use(authenticateToken);
 
 async function obtenerProductosConStock(local_id) {
   const productos = await Producto.query()
