@@ -21,6 +21,9 @@ const DocumentoLocal = require('../models/DocumentoLocal');
 const path = require('path');
 const cloudinary = require('../services/cloudinary');
 
+const auth = require('../middlewares/authMiddleware');
+router.use(auth);
+
 // Obtener todos los documentos activos
 router.get('/', async (req, res) => {
   try {

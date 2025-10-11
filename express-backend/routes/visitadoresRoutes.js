@@ -141,16 +141,97 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Actualizar visitador médico
+// PUT /visitadores/:id
 router.put('/:id', async (req, res) => {
+  const visitadorId = parseInt(req.params.id);
+  const data = req.body;
+
   try {
-    const actualizado = await VisitadorMedico.query().patchAndFetchById(req.params.id, req.body);
-    if (!actualizado) return res.status(404).json({ error: 'Visitador no encontrado' });
-    res.json(actualizado);
+    // Validar existencia de objeto usuario
+    if (!data.usuario || typeof data.usuario !== 'object') {
+      return res.status(400).json({ error: 'El objeto usuario es obligatorio' });
+    }
+
+    // Verificar que telefonos sea arreglo
+    if (data.telefonos && !Array.isArray(data.telefonos)) {
+      return res.status(400).json({ error: 'El campo telefonos debe ser un arreglo' });
+    }
+
+    // Buscar el visitador con sus relaciones
+    const visitador = await VisitadorMedico.query()
+      .findById(visitadorId)
+      .withGraphFetched('[usuario, telefonos]');
+
+    if (!visitador) {
+      return res.status(404).json({ error: 'Visitador no encontrado' });
+    }
+
+    // 🔹 Actualizar usuario relacionado
+    await Usuario.query()
+      .patch({
+        nombre: data.usuario.nombre,
+        apellidos: data.usuario.apellidos,
+        email: data.usuario.email,
+        fechanacimiento: data.usuario.fechanacimiento,
+        rol_id: data.usuario.rol_id,
+        status: data.usuario.status,
+        // Si viene "unchanged", no modificar contraseña
+        ...(data.usuario.contrasena !== 'unchanged' && {
+          contrasena: data.usuario.contrasena,
+        }),
+      })
+      .where('id', visitador.usuario_id);
+
+    // 🔹 Actualizar datos del visitador
+    await VisitadorMedico.query()
+      .patch({
+        proveedor_id: data.proveedor_id ?? null,
+      })
+      .where('id', visitadorId);
+
+    // 🔹 Actualizar o crear teléfonos
+    if (data.telefonos && data.telefonos.length > 0) {
+      const Telefono = require('../models/Telefono');
+
+      for (const tel of data.telefonos) {
+        if (tel.id) {
+          // Si existe id → actualizar
+          await Telefono.query()
+            .patch({
+              numero: tel.numero,
+              tipo: tel.tipo,
+            })
+            .where('id', tel.id);
+        } else {
+          // Si no existe id → crear nuevo
+          await Telefono.query().insert({
+            numero: tel.numero,
+            tipo: tel.tipo,
+            visitador_id: visitadorId,
+          });
+        }
+      }
+    }
+
+    // 🔹 Devolver visitador actualizado con sus relaciones
+    const actualizado = await VisitadorMedico.query()
+      .findById(visitadorId)
+      .withGraphFetched('[usuario, proveedor, telefonos]');
+
+    res.json({
+      ok: true,
+      message: 'Visitador actualizado correctamente',
+      visitador: actualizado,
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Error al actualizar visitador médico', details: err.message });
+    console.error('Error al actualizar visitador:', err);
+    res.status(500).json({
+      error: 'Error al actualizar visitador',
+      details: err.message,
+    });
   }
 });
+
 
 router.get('/:id/telefonos', async (req, res) => {
   try {

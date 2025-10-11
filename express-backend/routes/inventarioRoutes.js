@@ -14,10 +14,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { registrarMovimiento } = require('../services/inventarioService');
 const validarMovimiento = require('../middlewares/validarMovimiento');
 const authenticateToken = require('../middlewares/authMiddleware');
 router.use(authenticateToken);
+
+const auth = require('../middlewares/authMiddleware');
+
+router.use(auth);
 
 router.post('/', validarMovimiento, async (req, res) => {
   try {
