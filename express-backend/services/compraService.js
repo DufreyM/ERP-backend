@@ -7,7 +7,7 @@ const Lote = require('../models/Lote')
 const Producto = require('../models/Producto');
 const authenticateToken = require('../middlewares/authMiddleware');
 
-// router.use(authenticateToken);
+router.use(authenticateToken);
 
 
 router.get('/', async (req, res) => {
@@ -145,8 +145,8 @@ router.post('/', async (req, res) => {
     }
     return res.status(500).json({ error: 'Error al registrar la compra', detalles: error.message });
   }
-});
+})
 
 
 
-module.exports = router;
+module.exports = router
