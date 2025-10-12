@@ -72,6 +72,9 @@ app.use('/visitadores', visitadoresRouter);
 const ventaRouter = require('./services/ventaService'); 
 app.use('/ventas', ventaRouter);
 
+const compraRouter = require('./services/compraService')
+app.use('/compras', compraRouter)
+
 const proveedorRoutes = require('./routes/proveedorRoutes');
 app.use('/api/proveedor', proveedorRoutes);
 
