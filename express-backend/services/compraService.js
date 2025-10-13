@@ -41,15 +41,24 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { no_factura, proveedor_id, nuevo_proveedor, descripcion, credito, cuotas, detalles } = req.body;
+  const {
+    no_factura, proveedor_id, nuevo_proveedor,
+    descripcion, credito, cuotas, detalles
+  } = req.body;
   let trx;
 
   try {
-    const userId = req.user?.id;
-    const userLocalId = req.user?.local_id;
+    const user = req.user;
+    const userId = user?.id;
+    const userRol = user?.rol_id;
+    const userLocalId = user?.local_id;
+
+    const localIdFinal = userRol === 1
+      ? req.body.local_id || userLocalId  
+      : userLocalId;
 
     if (!userId) return res.status(401).json({ error: 'Usuario no autenticado' });
-    if (!userLocalId) return res.status(400).json({ error: 'El usuario no tiene local asignado (local_id)' });
+    if (!localIdFinal) return res.status(400).json({ error: 'El usuario no tiene local asignado (local_id)' });
     if (!Array.isArray(detalles) || detalles.length === 0) {
       return res.status(400).json({ error: 'La compra requiere al menos un detalle' });
     }
@@ -58,7 +67,6 @@ router.post('/', async (req, res) => {
 
     let proveedorIdFinal = proveedor_id || null;
 
-    // Si no hay proveedor_id pero hay datos de nuevo proveedor, insertar
     if (!proveedor_id && nuevo_proveedor) {
       try {
         const proveedorCreado = await Proveedor.query(trx).insertGraph(nuevo_proveedor);
@@ -68,12 +76,10 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Validar proveedor_id válido 
     if (!proveedorIdFinal) {
       throw new Error('Se requiere un proveedor válido para registrar la compra');
     }
 
-    // Crear la compra
     let total = 0;
     const nuevaCompra = await Compra.query(trx).insert({
       no_factura,
@@ -84,7 +90,6 @@ router.post('/', async (req, res) => {
       total: 0
     });
 
-    // Procesar detalles
     for (const item of detalles) {
       const { producto_id, cantidad, precio_costo, precio_venta, lote, fecha_vencimiento } = item;
 
@@ -110,14 +115,13 @@ router.post('/', async (req, res) => {
         compra_id: nuevaCompra.id,
         precio_costo,
         precio_venta,
-        local_id: userLocalId,
+        local_id: localIdFinal, 
         encargado_id: userId
       });
 
       total += cantidad * precio_costo;
     }
 
-    // Actualizar total en la compra
     await Compra.query(trx).findById(nuevaCompra.id).patch({ total });
 
     const cuotasFinal = credito ? cuotas : 0;
@@ -145,7 +149,7 @@ router.post('/', async (req, res) => {
     }
     return res.status(500).json({ error: 'Error al registrar la compra', detalles: error.message });
   }
-})
+});
 
 
 

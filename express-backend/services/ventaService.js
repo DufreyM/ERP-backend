@@ -37,16 +37,17 @@ router.post('/', async (req, res) => {
 
   let trx;
   try {
-    // del JWT (firmado en /login)
-    const userId = req.user?.id;
-    const userLocalId = req.user?.local_id;
+    const user = req.user;
+    const userId = user?.id;
+    const userRol = user?.rol_id;
+    const userLocalId = user?.local_id;
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Usuario no autenticado' });
-    }
-    if (!userLocalId) {
-      return res.status(400).json({ error: 'El usuario no tiene local asignado (local_id)' });
-    }
+    const localIdFinal = userRol === 1
+      ? req.body.local_id || userLocalId  // Admin puede sobreescribir
+      : userLocalId;
+
+    if (!userId) return res.status(401).json({ error: 'Usuario no autenticado' });
+    if (!localIdFinal) return res.status(400).json({ error: 'El usuario no tiene local asignado (local_id)' });
     if (!Array.isArray(detalles) || detalles.length === 0) {
       return res.status(400).json({ error: 'La venta requiere al menos un detalle' });
     }
@@ -59,7 +60,6 @@ router.post('/', async (req, res) => {
     const clienteIdFinal = await resolveClienteId(trx, { cliente_id, cliente });
 
     let total = 0;
-    // Venta con autor (encargado); created_at lo pone la BD
     const nuevaVenta = await Venta.query(trx).insert({
       cliente_id: clienteIdFinal,
       tipo_pago,
@@ -75,20 +75,16 @@ router.post('/', async (req, res) => {
 
       let cantidadRestante = cant;
 
-      // Precios desde productos
       const producto = await trx.table('productos')
         .select('precioventa', 'preciocosto', 'nombre')
         .where('codigo', item.producto_id)
         .first();
 
-      if (!producto) {
-        throw new Error(`Producto con ID ${item.producto_id} no encontrado`);
-      }
+      if (!producto) throw new Error(`Producto con ID ${item.producto_id} no encontrado`);
 
       const precio_unitario = parseFloat(producto.precioventa);
       const precio_costo = parseFloat(producto.preciocosto);
 
-      // Lotes por vencimiento (FIFO por fecha de vencimiento)
       const lotes = await Lote.query(trx)
         .where('producto_id', item.producto_id)
         .orderBy('fecha_vencimiento', 'asc');
@@ -107,8 +103,6 @@ router.post('/', async (req, res) => {
         if (cantidadRestante <= 0) break;
 
         const usarCantidad = Math.min(cantidadRestante, lote.stock);
-
-        // Descuento por vencimiento
         const hoy = new Date();
         const vencimiento = new Date(lote.fecha_vencimiento);
         const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
@@ -126,20 +120,19 @@ router.post('/', async (req, res) => {
           lote_id: lote.id,
           cantidad: usarCantidad,
           precio_unitario,
-          descuento: parseFloat((descuento * 100).toFixed(2)), // porcentaje
+          descuento: parseFloat((descuento * 100).toFixed(2)),
           subtotal
         });
 
         await Inventario.query(trx).insert({
           lote_id: lote.id,
           cantidad: -usarCantidad,
-          tipo_movimiento_id: 2,     // salida por venta
+          tipo_movimiento_id: 2,
           venta_id: nuevaVenta.id,
           precio_venta: precio_unitario,
           precio_costo,
-          local_id: userLocalId,     // del token
-          encargado_id: userId       // del token
-          // fecha: DEFAULT NOW() en BD
+          local_id: localIdFinal, 
+          encargado_id: userId
         });
 
         total += subtotal;
@@ -147,13 +140,11 @@ router.post('/', async (req, res) => {
       }
 
       if (cantidadRestante > 0) {
-        throw new Error(
-          `Stock insuficiente para el producto "${producto.nombre}". Solicitado: ${cant}`
-        );
+        throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Solicitado: ${cant}`);
       }
     }
 
-    await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
+        await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
 
     await trx.commit();
 
@@ -166,7 +157,10 @@ router.post('/', async (req, res) => {
     if (trx) {
       try { await trx.rollback(); } catch (_) {}
     }
-    return res.status(500).json({ error: 'Error al registrar la venta', detalles: error.message });
+    return res.status(500).json({
+      error: 'Error al registrar la venta',
+      detalles: error.message
+    });
   }
 });
 
