@@ -12,6 +12,7 @@ Este es el backend del sistema de gestión de empresas para **EconoFarma**, dise
 - **dotenv** `^16.3.1` – Variables de entorno
 - **cors** `^2.8.5` – Control de acceso HTTP
 - **nodemon** `^3.1.9` – Recarga automática en desarrollo
+- **postgres** `16.0.0` - Base de datos
 
 ---
 
