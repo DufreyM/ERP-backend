@@ -6,9 +6,9 @@ const Inventario = require('../models/Inventario')
 const Lote = require('../models/Lote')
 const Producto = require('../models/Producto');
 const authenticateToken = require('../middlewares/authMiddleware');
+const { formatCompra } = require('../helpers/formatters/compraFormatter')
 
 router.use(authenticateToken);
-
 
 router.get('/', async (req, res) => {
   const { local_id } = req.query;
@@ -31,8 +31,14 @@ router.get('/', async (req, res) => {
       compras = await Compra.query().withGraphFetched('[usuario, proveedor, pagos, productos.lote.producto]')
 
     }
+    //datos filtrados
+    const formatted = compras.map(formatCompra);
 
-    res.json(compras);
+    //Datos completos
+    //res.json(compras); 
+
+    //Datos filtrados
+    res.json(formatted);
 
   } catch (error) {
     console.error(error);
