@@ -1,5 +1,5 @@
-/*  compraFormatter.js
-    Esta función se encarga de transformar los datos de una compra para que sean seguros y adecuados
+/*  empleadosFormatter.js
+    Esta función se encarga de transformar los datos de los empleados para que sean seguros y adecuados
     al enviarse al frontend. Se deben incluir solo los campos necesarios y omitir cualquier dato sensible.
     
     Si necesitas agregar nuevos campos:
@@ -7,7 +7,7 @@
     - Ubícalos en el objeto original y agrégalo explícitamente en la estructura retornada.
     Autor: Melisa Mendizabal 
 
-    Fecha de modificacion: 17/10/2025
+    Fecha de modificacion: 15/10/2025
 */
 
 function formatEmpleado(empleado) {

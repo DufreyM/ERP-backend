@@ -92,7 +92,7 @@ router.get('/:id', authorizeRole([1]), async (req, res) => {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
     //datos filtados
-    const formatted = empleado.map(formatEmpleado)
+    const formatted = formatEmpleado(empleado)
     res.json(formatted)
     
     //res.json(empleado);
