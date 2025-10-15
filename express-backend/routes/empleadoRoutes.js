@@ -19,6 +19,7 @@ const router = require('express').Router();
 const Usuario = require('../models/Usuario');
 const auth = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/authorizeRole');
+const { formatEmpleado } = require('../helpers/formatters/empleadoFormatter');
 
 // Aplicar autenticación a todas las rutas
 router.use(auth);
@@ -57,9 +58,13 @@ router.get('/', authorizeRole([1]), async (req, res) => {
     
     const totalCount = await totalQuery;
     const total = parseInt(totalCount.count);
+
+    //datos filtrados
+    const formatted = empleados.map(formatEmpleado)
     
     res.json({
-      empleados,
+      empleados: formatted,
+      //empleados,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -74,6 +79,7 @@ router.get('/', authorizeRole([1]), async (req, res) => {
 });
 
 // GET /empleados/:id - Obtener un empleado específico
+// Tiene el mismo formato que empleados
 router.get('/:id', authorizeRole([1]), async (req, res) => {
   try {
     const { id } = req.params;
@@ -85,8 +91,11 @@ router.get('/:id', authorizeRole([1]), async (req, res) => {
     if (!empleado) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
+    //datos filtados
+    const formatted = empleado.map(formatEmpleado)
+    res.json(formatted)
     
-    res.json(empleado);
+    //res.json(empleado);
   } catch (error) {
     console.error('Error al obtener empleado:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
