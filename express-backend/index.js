@@ -22,6 +22,21 @@ const documentosLocalesRouter = require('./services/documentoLocalService');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// 🔒 Seguridad básica
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Protección de cabeceras HTTP
+app.use(helmet());
+
+// Limitar peticiones (previene ataques de fuerza bruta y DDoS)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // máximo 100 solicitudes por IP
+  message: 'Demasiadas solicitudes desde esta IP, intenta más tarde.'
+});
+app.use(limiter);
+
 app.use(cors({
   origin: 'http://localhost:3001', 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -87,3 +102,6 @@ app.listen(port, () => {
 
 const clientesRouter = require('./routes/Clientes');   // <= NUEVO
 app.use('/clientes', clientesRouter);              // <= NUEVO
+
+const transferenciasRouter = require('./services/transferenciasService');
+app.use('/transferencias', transferenciasRouter);
