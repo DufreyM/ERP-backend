@@ -6,6 +6,7 @@ const Inventario = require('../models/Inventario')
 const Lote = require('../models/Lote')
 const Producto = require('../models/Producto');
 const authenticateToken = require('../middlewares/authMiddleware');
+const crearNotificacionesDeVencimiento = require('./notificacionesVencimiento');
 
 router.use(authenticateToken);
 
@@ -106,6 +107,20 @@ router.post('/', async (req, res) => {
           .insert({ lote, producto_id, fecha_vencimiento })
           .returning('*');
         loteExistente = Array.isArray(nuevoLote) ? nuevoLote[0] : nuevoLote;
+      }
+      // Crear notificaciones de vencimiento en el calendario
+      try {
+        const productoInfo = await Producto.query().findById(producto_id);
+        if (productoInfo && loteExistente) {
+          await crearNotificacionesDeVencimiento(
+            productoInfo,
+            loteExistente,
+            user,
+            localIdFinal
+          );
+        }
+      } catch (notifErr) {
+        console.warn('No se pudo crear la notificación:', notifErr.message);
       }
 
       await trx('inventario').insert({
