@@ -32,7 +32,7 @@ app.use(helmet());
 // Limitar peticiones (previene ataques de fuerza bruta y DDoS)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 solicitudes por IP
+  max: 10000, // máximo 100 solicitudes por IP
   message: 'Demasiadas solicitudes desde esta IP, intenta más tarde.'
 });
 app.use(limiter);
