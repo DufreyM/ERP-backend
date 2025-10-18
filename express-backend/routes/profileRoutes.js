@@ -19,7 +19,8 @@ const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middlewares/authMiddleware');
 const Usuario = require('../models/Usuario');
-const cloudinary = require('../services/cloudinary')
+const cloudinary = require('../services/cloudinary');
+const { formatProfile } = require('../helpers/formatters/profileFormatter');
 
 router.get('/me',
     authenticateToken,
@@ -35,7 +36,11 @@ router.get('/me',
                 return res.status(404).json({ error: 'Usuario no encontrado' });
             }
 
-            res.json(usuario);
+            //datos filtrados
+            const formatted = formatProfile(usuario)
+            res.json(formatted)
+
+            //res.json(usuario);
         } catch (err){
             console.error('Error al obtener el usuario:', err);
             res.status(500).json({ error: 'Error al obtener la información del usuario' });

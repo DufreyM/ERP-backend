@@ -29,6 +29,7 @@ const Inventario = require('../models/Inventario');
 const Lote = require('../models/Lote');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { resolveClienteId } = require('../helpers/resolveCliente');
+const { formatVentas } = require('../helpers/formatters/ventasFormatter');
 
 router.use(authenticateToken);
 
@@ -200,7 +201,15 @@ router.get('/', async (req, res) => {
         .withGraphFetched('[cliente, encargado, detalles.[producto, lote]]');
     }
 
-    res.json(ventas);
+    //datos filtrados
+    const formatted = ventas.map(formatVentas);
+
+    //Datos completos
+    //res.json(ventas);
+
+    //Datos filtrados
+    res.json(formatted);
+   
   } catch (error) {
     console.error('[GET /ventas] Error:', error);
     res.status(500).json({ error: 'Error al obtener las ventas', detalles: error.message });
