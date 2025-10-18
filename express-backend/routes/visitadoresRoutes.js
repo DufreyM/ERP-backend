@@ -27,6 +27,7 @@ const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 
 const authenticateToken = require('../middlewares/authMiddleware');
+const { formatVisitador } = require('../helpers/formatters/visitadoresFormatter');
 router.use(authenticateToken);
 
 // Helper para relaciones por defecto
@@ -36,7 +37,11 @@ const RELACIONES = '[usuario, proveedor, telefonos]';
 router.get('/', async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query().withGraphFetched(RELACIONES);
-    res.json(visitadores);
+
+    //datos filtrados 
+    const formatted = visitadores.map(formatVisitador);
+    res.json(formatted)
+    //res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores médicos', details: err.message });
   }
@@ -50,7 +55,10 @@ router.get('/activos', async (req, res) => {
       .whereExists(
         VisitadorMedico.relatedQuery('usuario').where('status', 'activo')
       );
-    res.json(visitadores);
+    //datos filtrados 
+    const formatted = visitadores.map(formatVisitador);
+    res.json(formatted)
+    //res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores activos', details: err.message });
   }
@@ -66,8 +74,10 @@ router.get('/:id', async (req, res) => {
     if (!visitador) {
       return res.status(404).json({ error: 'Visitador no encontrado' });
     }
-
-    res.json(visitador);
+    //datos filtrados 
+    const formatted = formatVisitador(visitador);
+    res.json(formatted)
+    //res.json(visitador);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitador médico', details: err.message });
   }
@@ -79,13 +89,18 @@ router.get('/proveedor/:proveedorId', async (req, res) => {
     const visitadores = await VisitadorMedico.query()
       .where('proveedor_id', req.params.proveedorId)
       .withGraphFetched(RELACIONES);
-    res.json(visitadores);
+
+    //datos filtrados 
+    const formatted = visitadores.map(formatVisitador);
+    res.json(formatted)
+    //res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores por proveedor', details: err.message });
   }
 });
 
 // Obtener visitadores médicos por local con status activo
+//ya tiene filtro
 router.get('/por-local/:localId', async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()

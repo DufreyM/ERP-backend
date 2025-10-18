@@ -5,6 +5,7 @@ const auth = require('../middlewares/authMiddleware');
 router.use(auth);
 
 // GET /clientes?nit=XXXX  (búsqueda exacta por NIT)
+//no necesita filtrado
 router.get('/', async (req,res)=>{
   const { nit } = req.query;
   if (!nit) return res.status(400).json({ error:'nit requerido' });

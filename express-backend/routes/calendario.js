@@ -5,6 +5,7 @@ const Estado_Calendario = require('../models/Estado_Calendario');
 const TipoEventoCalendario = require('../models/Tipo_Evento_Calendario');
 const knex = require('../database/knexfile').development;
 const authenticateToken = require('../middlewares/authMiddleware');
+const { formatCalendarioNotificaciones, formatCalendario } = require('../helpers/formatters/calendarioFormatter');
 
 //funcion auxiliar - Renato R. 24/07/25
 async function getTipoEventoId(nombre) {
@@ -49,7 +50,14 @@ router.get('/', authenticateToken, async (req, res) => {
         }
 
         const eventos = await query;
-        res.json(eventos);
+
+        //datos filtados
+        const formatted = eventos.map(formatCalendario);
+
+        res.json(formatted);
+
+        //datos originales
+        //res.json(eventos);
     } catch (err) {
         console.error('Error obteniendo eventos del calendario:', err);
         res.status(500).json({ 
@@ -60,6 +68,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Nuevo endpoint para obtener estados de calendario
+//No necesita filtrado
 router.get('/estados', async (req, res) => {
     try {
         const estados = await Estado_Calendario.query();
@@ -73,6 +82,7 @@ router.get('/estados', async (req, res) => {
     }
 });
 
+//No necesita filtrado
 router.get('/tipos-evento', async (req, res) => {
     try {
         const tiposEvento = await TipoEventoCalendario.query();
@@ -111,7 +121,12 @@ router.get('/notificaciones', authenticateToken, async (req, res) => {
         }
 
         const notificaciones = await query;
-        res.json(notificaciones);
+
+        //filtrado
+        const formatted = notificaciones.map(formatCalendarioNotificaciones)
+
+        //res.json(notificaciones);
+        res.json(formatted);
     } catch (err) {
         console.error('Error obteniendo notificaciones:', err);
         res.status(500).json({ 
@@ -148,7 +163,13 @@ router.get('/tareas', authenticateToken, async (req, res) => {
         }
 
         const tareas = await query;
-        res.json(tareas);
+
+        //datos filtrados
+        const formatted = tareas.map(formatCalendarioNotificaciones)
+
+        res.json(formatted);
+        //datos originales
+        //res.json(tareas);
     } catch (err) {
         console.error('Error obteniendo tareas:', err);
         res.status(500).json({ 
