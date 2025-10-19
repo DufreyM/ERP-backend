@@ -109,8 +109,6 @@ router.post('/', async (req, res) => {
         const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
 
         let descuento = 0;
-        if (diasRestantes <= 5) descuento = 0.4;
-        else if (diasRestantes <= 10) descuento = 0.2;
 
         const precioFinal = precio_unitario * (1 - descuento);
         const subtotal = usarCantidad * precioFinal;
