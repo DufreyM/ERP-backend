@@ -38,7 +38,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use(cors({
-  origin: 'http://localhost:3001', 
+  origin: `${process.env.URL}`, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
@@ -97,7 +97,7 @@ const empleadosRoutes = require('./routes/empleadoRoutes');
 app.use('/api/empleados', empleadosRoutes);
 
 app.listen(port, () => {
-  console.log(`🚀 Servidor Express en http://localhost:${port}`);
+  console.log(`🚀 App en ${process.env.URL}`);
 });
 
 const clientesRouter = require('./routes/Clientes');   // <= NUEVO
