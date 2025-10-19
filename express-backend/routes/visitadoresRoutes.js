@@ -25,12 +25,26 @@ const express = require('express');
 const router = express.Router();
 const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
-
 const authenticateToken = require('../middlewares/authMiddleware');
-router.use(authenticateToken);
 
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
+
+// Crear nuevo visitador médico
+router.post('/', async (req, res) => {
+  try {
+    if (req.body.usuario) {
+      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
+    }
+
+    const nuevo = await VisitadorMedico.query().insertGraph(req.body);
+    res.status(201).json(nuevo);
+  } catch (err) {
+    res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
+  }
+});
+
+router.use(authenticateToken);
 
 // Obtener todos los visitadores médicos
 router.get('/', async (req, res) => {
@@ -127,19 +141,6 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// Crear nuevo visitador médico
-router.post('/', async (req, res) => {
-  try {
-    if (req.body.usuario) {
-      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
-    }
-
-    const nuevo = await VisitadorMedico.query().insertGraph(req.body);
-    res.status(201).json(nuevo);
-  } catch (err) {
-    res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
-  }
-});
 
 // PUT /visitadores/:id
 router.put('/:id', async (req, res) => {
