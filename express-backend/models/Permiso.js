@@ -17,7 +17,21 @@ class Permiso extends Model {
         id: { type: 'integer' },
         nombre: { type: 'string', maxLength: 255 },
         descripcion: { type: ['string', 'null'] },
-        modulo: { type: ['string', 'null'], maxLength: 50 }
+        modulo_id: { type: ['integer', 'null'] }
+      }
+    };
+  }
+
+  static get relationMappings() {
+    const Modulo = require('./Modulo');
+    return {
+      modulo: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Modulo,
+        join: {
+          from: 'permisos.modulo_id',
+          to: 'modulos.id'
+        }
       }
     };
   }

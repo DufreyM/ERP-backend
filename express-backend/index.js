@@ -105,3 +105,6 @@ app.use('/clientes', clientesRouter);              // <= NUEVO
 
 const transferenciasRouter = require('./services/transferenciasService');
 app.use('/transferencias', transferenciasRouter);
+
+const permissionRouter = require('./routes/permissionRouter');
+app.use('/api/permisos', permissionRouter);
