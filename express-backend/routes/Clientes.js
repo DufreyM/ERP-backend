@@ -15,17 +15,38 @@ router.get('/', async (req,res)=>{
 });
 
 // POST /clientes  (crear o actualizar por NIT)
-router.post('/', async (req,res)=>{
-  const { nit, nombre, direccion, correo } = req.body;
-  if (!nit || !nombre) return res.status(400).json({ error:'nit y nombre requeridos' });
+router.post('/', async (req, res) => {
+  const { nit, nombre, direccion, correo, totalCompra } = req.body;
 
-  // upsert por nit
+  // 1. Verificación de campos requeridos
+  if (!nombre||!nit) {
+    return res.status(400).json({ error: 'nombre requerido' });
+  }
+
+  // 2. Si la compra es mayor a Q2500, NIT es obligatorio
+  if (totalCompra && totalCompra > 2500 && !nit) {
+    return res.status(400).json({ error: 'NIT es obligatorio para compras mayores a Q2500' });
+  }
+
+  // 3. Si se proporciona NIT, validar formato
+  if (nit && !esNitValido(nit)) {
+    return res.status(400).json({ error: 'NIT inválido' });
+  }
+
+  // 4. upsert por nit
   const c = await Cliente.query()
     .insert({ nit, nombre, direccion: direccion ?? null, correo: correo ?? null })
-    .onConflict('nit').merge()      // requiere PG/MySQL 8; en SQLite usar alternativa
+    .onConflict('nit')
+    .merge()
     .returning('*');
 
   res.status(201).json(c);
 });
+
+
+function esNitValido(nit) {
+  const limpio = nit.trim().replace(/-/g, '');
+  return /^[0-9]+[0-9kK]$/.test(limpio);
+}
 
 module.exports = router;
