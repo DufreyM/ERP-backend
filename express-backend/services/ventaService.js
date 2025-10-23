@@ -68,6 +68,7 @@ router.post('/', async (req, res) => {
       encargado_id: userId
     });
 
+    // --- Calcular total y registrar detalles ---
     for (const item of detalles) {
       const cant = Number(item?.cantidad);
       if (!item?.producto_id || !Number.isFinite(cant) || cant <= 0) {
@@ -75,7 +76,6 @@ router.post('/', async (req, res) => {
       }
 
       let cantidadRestante = cant;
-
       const producto = await trx.table('productos')
         .select('precioventa', 'preciocosto', 'nombre')
         .where('codigo', item.producto_id)
@@ -85,7 +85,6 @@ router.post('/', async (req, res) => {
 
       const precio_unitario = parseFloat(producto.precioventa);
       const precio_costo = parseFloat(producto.preciocosto);
-
       const lotes = await Lote.query(trx)
         .where('producto_id', item.producto_id)
         .orderBy('fecha_vencimiento', 'asc');
@@ -104,13 +103,7 @@ router.post('/', async (req, res) => {
         if (cantidadRestante <= 0) break;
 
         const usarCantidad = Math.min(cantidadRestante, lote.stock);
-        const hoy = new Date();
-        const vencimiento = new Date(lote.fecha_vencimiento);
-        const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
-
-        let descuento = 0;
-
-        const precioFinal = precio_unitario * (1 - descuento);
+        const precioFinal = precio_unitario;
         const subtotal = usarCantidad * precioFinal;
 
         await VentaDetalle.query(trx).insert({
@@ -119,7 +112,7 @@ router.post('/', async (req, res) => {
           lote_id: lote.id,
           cantidad: usarCantidad,
           precio_unitario,
-          descuento: parseFloat((descuento * 100).toFixed(2)),
+          descuento: 0,
           subtotal
         });
 
@@ -130,7 +123,7 @@ router.post('/', async (req, res) => {
           venta_id: nuevaVenta.id,
           precio_venta: precio_unitario,
           precio_costo,
-          local_id: localIdFinal, 
+          local_id: localIdFinal,
           encargado_id: userId
         });
 
@@ -143,8 +136,28 @@ router.post('/', async (req, res) => {
       }
     }
 
-        await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
+    // --- 🚨 Validaciones fiscales ---
+    const nit = cliente?.nit?.trim() || null;
 
+    // Si total > Q2500 → NIT requerido y no puede ser CF
+    if (total > 2500 && (!nit || nit.toUpperCase() === 'CF')) {
+      await trx.rollback();
+      return res.status(400).json({
+        error: 'Para ventas mayores a Q2500 se requiere un NIT válido (no se permite CF).'
+      });
+    }
+
+    // Si hay NIT, validar formato (solo números o con guion + K/k)
+    if (nit && nit.toUpperCase() !== 'CF') {
+      const limpio = nit.replace(/-/g, '');
+      if (!/^[0-9]+[0-9kK]$/.test(limpio)) {
+        await trx.rollback();
+        return res.status(400).json({ error: 'El NIT ingresado no tiene un formato válido.' });
+      }
+    }
+
+    // --- Guardar total final ---
+    await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
     await trx.commit();
 
     return res.status(201).json({
@@ -162,6 +175,7 @@ router.post('/', async (req, res) => {
     });
   }
 });
+
 
 // GET /ventas/:id (incluye autor y fecha)
 router.get('/:id', async (req, res) => {
