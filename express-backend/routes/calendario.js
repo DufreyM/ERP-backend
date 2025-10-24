@@ -5,6 +5,7 @@ const Estado_Calendario = require('../models/Estado_Calendario');
 const TipoEventoCalendario = require('../models/Tipo_Evento_Calendario');
 const knex = require('../database/knexfile').development;
 const authenticateToken = require('../middlewares/authMiddleware');
+const checkPermission = require('../middlewares/checkPermission');
 
 //funcion auxiliar - Renato R. 24/07/25
 async function getTipoEventoId(nombre) {
@@ -14,7 +15,7 @@ async function getTipoEventoId(nombre) {
 }
 
 // Obtener eventos filtrados por local y fecha
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, checkPermission('ver_calendario'), async (req, res) => {
     try {
         const { start, end, local_id, tipo_evento_id } = req.query;
         const usuario = req.user;
@@ -85,7 +86,7 @@ router.get('/tipos-evento', async (req, res) => {
 });
 
 // Endpoint específico para notificaciones (productos por expirar)
-router.get('/notificaciones', authenticateToken, async (req, res) => {
+router.get('/notificaciones', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
     try {
         const { local_id } = req.query;
         const usuario = req.user;
@@ -122,7 +123,7 @@ router.get('/notificaciones', authenticateToken, async (req, res) => {
 });
 
 // Endpoint específico para tareas (reabastecimiento)
-router.get('/tareas', authenticateToken, async (req, res) => {
+router.get('/tareas', authenticateToken, checkPermission('ver_tareas'), async (req, res) => {
     try {
         const { local_id } = req.query;
         const usuario = req.user;
@@ -159,7 +160,7 @@ router.get('/tareas', authenticateToken, async (req, res) => {
 });
 
 // Crear evento
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkPermission('crear_evento'), async (req, res) => {
     try {
         const usuario = req.user;
         
@@ -188,7 +189,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Actualizar evento
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, checkPermission('editar_evento'), async (req, res) => {
         try {
             const usuario = req.user;
             const evento = await Calendario.query().findById(req.params.id);
@@ -208,7 +209,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
     // Ruta PUT para marcado como eliminado
-    router.put('/:id/marcar-eliminado', authenticateToken, async (req, res) => {
+    router.put('/:id/marcar-eliminado', authenticateToken, checkPermission('eliminar_evento'), async (req, res) => {
     try {
         const { id } = req.params;
         const usuario = req.user;
@@ -250,7 +251,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Obtener eventos eliminados
-    router.get('/eliminados', authenticateToken, async (req, res) => {
+    router.get('/eliminados', authenticateToken, checkPermission('ver_calendario'), async (req, res) => {
         try {
             const usuario = req.user;
             

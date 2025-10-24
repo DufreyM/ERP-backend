@@ -49,11 +49,27 @@ ALTER TABLE permisos DROP COLUMN modulo;
 -- (El DOWN se define en el JS)
 
 INSERT INTO permisos (nombre, descripcion, modulo_id) VALUES
-('ver_modulos', 'Ver todos los módulos del sistema', 14);
-/* ('ver_permisos', 'Ver listado completo de permisos del sistema', 'Usuarios y Roles'),
-('crear_permiso', 'Crear nuevos permisos en el sistema', 'Usuarios y Roles'),
-('editar_permiso', 'Editar la descripción o nombre de un permiso existente', 'Usuarios y Roles'),
-('eliminar_permiso', 'Eliminar permisos obsoletos', 'Usuarios y Roles'); */
+-- Permisos para permisos jaja
+('ver_modulos', 'Ver todos los módulos del sistema', 14),
+('ver_permisos', 'Ver listado completo de permisos del sistema', 14),
+('crear_permiso', 'Crear nuevos permisos en el sistema', 14),
+('editar_permiso', 'Editar la descripción o nombre de un permiso existente', 14),
+('eliminar_permiso', 'Eliminar permisos obsoletos', 14),
+
+-- Permisos para calendario
+('ver_calendario', 'Ver el calendario de eventos', 13),
+('crear_evento', 'Crear nuevos eventos en el calendario', 13),
+('editar_evento', 'Editar eventos existentes', 13),
+('eliminar_evento', 'Eliminar eventos del calendario', 13),
+('ver_notificaciones', 'Ver notificaciones del sistema', 13),
+('ver_tareas', 'Ver tareas pendientes', 13),
+
+-- Permisos para movimientos de inventario
+('registrar_movimiento', 'Registrar movimientos de inventario', 13);
 
 INSERT INTO permisos_roles (rol_id, permiso_id) VALUES 
-(1, 57);
+(1, 57),
+(1, 58),
+(1, 59),
+(1, 60),
+(1, 61);
