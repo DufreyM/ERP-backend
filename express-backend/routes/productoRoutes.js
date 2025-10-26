@@ -22,7 +22,6 @@ router.get('/', async (req, res) => {
   res.json(productos);
 });
 
-
 router.get('/search', async (req, res) => {
   const { query, local_id } = req.query;
 
@@ -43,7 +42,9 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const nuevo = await Producto.query().insert(req.body);
+    const nuevo = await Producto.transaction(async trx => {
+      return await Producto.query(trx).insert(req.body);
+    });
     res.status(201).json(nuevo);
   } catch (err) {
     res.status(400).json({ error: 'Error al crear producto', details: err.message });
@@ -52,7 +53,10 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const actualizado = await Producto.query().patchAndFetchById(req.params.id, req.body);
+    const actualizado = await Producto.transaction(async trx => {
+      return await Producto.query(trx).patchAndFetchById(req.params.id, req.body);
+    });
+    if (!actualizado) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(actualizado);
   } catch (err) {
     res.status(400).json({ error: 'Error al actualizar producto', details: err.message });
@@ -61,12 +65,13 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const eliminado = await Producto.query().deleteById(req.params.id);
+    await Producto.transaction(async trx => {
+      await Producto.query(trx).deleteById(req.params.id);
+    });
     res.json({ mensaje: 'Producto eliminado' });
   } catch (err) {
     res.status(400).json({ error: 'Error al eliminar producto', details: err.message });
   }
 });
-
 
 module.exports = router;
