@@ -18,8 +18,8 @@
 
 // Autores:
 // - Leonardo Dufrey Mejía Mejía, 23648
-
-// Última modificación: 22/08/2025
+// modificado: Renato R.
+// Última modificación: 26/10/2025
 
 const express = require('express');
 const router = express.Router();
@@ -32,10 +32,8 @@ const { resolveClienteId } = require('../helpers/resolveCliente');
 const { formatVentas } = require('../helpers/formatters/ventasFormatter');
 
 router.use(authenticateToken);
-
 router.post('/', async (req, res) => {
   const { cliente_id, cliente, tipo_pago, detalles } = req.body;
-
   let trx;
   try {
     const user = req.user;
@@ -44,7 +42,7 @@ router.post('/', async (req, res) => {
     const userLocalId = user?.local_id;
 
     const localIdFinal = userRol === 1
-      ? req.body.local_id || userLocalId  // Admin puede sobreescribir
+      ? req.body.local_id || userLocalId
       : userLocalId;
 
     if (!userId) return res.status(401).json({ error: 'Usuario no autenticado' });
@@ -74,22 +72,25 @@ router.post('/', async (req, res) => {
         throw new Error('Cada detalle debe tener producto_id y cantidad > 0');
       }
 
-      let cantidadRestante = cant;
-
-      const producto = await trx.table('productos')
-        .select('precioventa', 'preciocosto', 'nombre')
+            // --- inicio del bloque reemplazado por producto --
+      const producto = await trx('productos')
+        .select('precioventa', 'preciocosto', 'nombre', 'codigo')
         .where('codigo', item.producto_id)
         .first();
 
       if (!producto) throw new Error(`Producto con ID ${item.producto_id} no encontrado`);
 
-      const precio_unitario = parseFloat(producto.precioventa);
-      const precio_costo = parseFloat(producto.preciocosto);
+      const precioPorDefecto = producto.precioventa ? parseFloat(producto.precioventa) : 0;
+      const precioCostoPorDefecto = producto.preciocosto ? parseFloat(producto.preciocosto) : 0;
 
+      let cantidadRestante = cant;
+
+      // Obtener lotes del producto ordenados por fecha_vencimiento asc (más próximos primero)
       const lotes = await Lote.query(trx)
         .where('producto_id', item.producto_id)
         .orderBy('fecha_vencimiento', 'asc');
 
+      // Construir lista de lotes que tienen stock > 0
       const lotesConStock = [];
       for (const lote of lotes) {
         const row = await Inventario.query(trx)
@@ -100,26 +101,48 @@ router.post('/', async (req, res) => {
         if (s > 0) lotesConStock.push({ ...lote, stock: s });
       }
 
+      // == Nueva parte: determinar el precio más alto entre lotes con stock ==
+      // Además, guardamos la "última compra con precio" por lote para reutilizarla.
+      let precioUnitarioMasAlto = precioPorDefecto;
+      const ultimaPorLote = {}; // { [loteId]: { precio_venta, precio_costo, ... } | null }
+      for (const lote of lotesConStock) {
+        const ultimaCompraConPrecio = await trx('inventario')
+          .where({ lote_id: lote.id })
+          .whereNotNull('precio_venta')
+          .orderBy('fecha', 'desc') // si tienes created_at, usa created_at desc
+          .first();
+        ultimaPorLote[lote.id] = ultimaCompraConPrecio || null;
+
+        const p = ultimaCompraConPrecio && ultimaCompraConPrecio.precio_venta != null
+          ? parseFloat(ultimaCompraConPrecio.precio_venta)
+          : null;
+
+        if (p != null && p > precioUnitarioMasAlto) {
+          precioUnitarioMasAlto = p;
+        }
+      }
+
       for (const lote of lotesConStock) {
         if (cantidadRestante <= 0) break;
 
         const usarCantidad = Math.min(cantidadRestante, lote.stock);
-        const hoy = new Date();
-        const vencimiento = new Date(lote.fecha_vencimiento);
-        const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
 
-        let descuento = 0;
+        const ultimaCompraConPrecio = ultimaPorLote[lote.id];
+        const precio_costo_lote = ultimaCompraConPrecio && ultimaCompraConPrecio.precio_costo != null
+          ? parseFloat(ultimaCompraConPrecio.precio_costo)
+          : precioCostoPorDefecto;
 
-        const precioFinal = precio_unitario * (1 - descuento);
-        const subtotal = usarCantidad * precioFinal;
+        const precio_unitario_aplicado = precioUnitarioMasAlto;
+
+        const subtotal = usarCantidad * precio_unitario_aplicado;
 
         await VentaDetalle.query(trx).insert({
           venta_id: nuevaVenta.id,
           producto_id: item.producto_id,
           lote_id: lote.id,
           cantidad: usarCantidad,
-          precio_unitario,
-          descuento: parseFloat((descuento * 100).toFixed(2)),
+          precio_unitario: precio_unitario_aplicado,
+          descuento: 0,
           subtotal
         });
 
@@ -128,9 +151,9 @@ router.post('/', async (req, res) => {
           cantidad: -usarCantidad,
           tipo_movimiento_id: 2,
           venta_id: nuevaVenta.id,
-          precio_venta: precio_unitario,
-          precio_costo,
-          local_id: localIdFinal, 
+          precio_venta: precio_unitario_aplicado, // precio que se cobró
+          precio_costo: precio_costo_lote,
+          local_id: localIdFinal,
           encargado_id: userId
         });
 
@@ -139,11 +162,10 @@ router.post('/', async (req, res) => {
       }
 
       if (cantidadRestante > 0) {
-        throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Solicitado: ${cant}`);
+        throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Solicitado: ${cant}, disponible: ${cant - cantidadRestante}`);
       }
-    }
 
-        await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
+    await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
 
     await trx.commit();
 
@@ -151,7 +173,7 @@ router.post('/', async (req, res) => {
       mensaje: 'Venta registrada correctamente',
       venta_id: nuevaVenta.id
     });
-  } catch (error) {
+  }} catch (error) {
     console.error('[POST /ventas] Error:', error);
     if (trx) {
       try { await trx.rollback(); } catch (_) {}
