@@ -20,6 +20,15 @@ const Usuario = require('../models/Usuario');
 const auth = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/authorizeRole');
 const checkPermission = require('../middlewares/checkPermission');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+// CORRECCIÓN: Importar mailService correctamente
+const mailService = require('../services/mailService');
+
+function generateToken() {
+  return crypto.randomBytes(16).toString('hex');
+}
 
 // Aplicar autenticación a todas las rutas
 router.use(auth);
@@ -95,7 +104,7 @@ router.get('/:id', checkPermission('ver_empleados'), authorizeRole([1]), async (
 });
 
 // POST /empleados - Crear un nuevo empleado
-router.post('/',  checkPermission('crear_empleado'), async (req, res) => {
+router.post('/', checkPermission('crear_empleado'), async (req, res) => {
   try {
     const { nombre, apellidos, rol_id, email, status, id_local, contrasena, fechanacimiento } = req.body;
     
@@ -114,6 +123,12 @@ router.post('/',  checkPermission('crear_empleado'), async (req, res) => {
     if (existeEmail) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
+
+    // Generar token de verificación
+    const token = mailService.generateToken();
+    
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(contrasena, 10);
     
     // Crear el empleado
     const nuevoEmpleado = await Usuario.query().insert({
@@ -121,13 +136,31 @@ router.post('/',  checkPermission('crear_empleado'), async (req, res) => {
       apellidos,
       rol_id,
       email,
-      status,
+      status: 'inactivo', // Siempre inactivo hasta verificación
       id_local: id_local || null,
-      contrasena, // Nota: En producción, deberías hashear la contraseña antes de guardarla
-      fechanacimiento
+      contrasena: hashedPassword,
+      fechanacimiento,
+      token, // Guardar el token para verificación
+      verificado: false // Inicialmente no verificado
     });
     
-    res.status(201).json(nuevoEmpleado);
+    // Enviar correo de verificación
+    try {
+      await mailService.sendVerificationEmail(email, token);
+      
+      res.status(201).json({
+        ...nuevoEmpleado,
+        message: 'Empleado creado exitosamente. Se ha enviado un correo de verificación.'
+      });
+    } catch (emailError) {
+      console.error('Error al enviar correo de verificación:', emailError);
+      // Si falla el correo, eliminar el usuario creado
+      await Usuario.query().deleteById(nuevoEmpleado.id);
+      return res.status(500).json({ 
+        error: 'Error al enviar correo de verificación. El empleado no fue creado.' 
+      });
+    }
+    
   } catch (error) {
     console.error('Error al crear empleado:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

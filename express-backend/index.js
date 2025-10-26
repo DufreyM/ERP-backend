@@ -8,7 +8,7 @@ const knexConfig = require('./database/knexfile.js');
 const knex = Knex(knexConfig.development);
 Model.knex(knex);
 
-const authRouter = require('./services/mailService');
+const authRouter = require('./routes/authRoutes');
 const productoRouter = require('./routes/productoRoutes');
 const inventarioMovimientoRouter = require('./routes/inventarioRoutes'); 
 const Usuario = require('./models/Usuario.js');
