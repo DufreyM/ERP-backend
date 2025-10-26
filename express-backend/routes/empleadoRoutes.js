@@ -19,12 +19,13 @@ const router = require('express').Router();
 const Usuario = require('../models/Usuario');
 const auth = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/authorizeRole');
+const checkPermission = require('../middlewares/checkPermission');
 
 // Aplicar autenticación a todas las rutas
 router.use(auth);
 
 // GET /empleados - Obtener lista de empleados con filtros
-router.get('/', authorizeRole([1]), async (req, res) => {
+router.get('/', checkPermission('ver_empleados'), async (req, res) => {
   try {
     const { rol_id, status, id_local, page = 1, limit = 10 } = req.query;
     
@@ -74,7 +75,7 @@ router.get('/', authorizeRole([1]), async (req, res) => {
 });
 
 // GET /empleados/:id - Obtener un empleado específico
-router.get('/:id', authorizeRole([1]), async (req, res) => {
+router.get('/:id', checkPermission('ver_empleados'), authorizeRole([1]), async (req, res) => {
   try {
     const { id } = req.params;
     const empleado = await Usuario.query()
@@ -94,7 +95,7 @@ router.get('/:id', authorizeRole([1]), async (req, res) => {
 });
 
 // POST /empleados - Crear un nuevo empleado
-router.post('/', authorizeRole([1]), async (req, res) => {
+router.post('/',  checkPermission('crear_empleado'), async (req, res) => {
   try {
     const { nombre, apellidos, rol_id, email, status, id_local, contrasena, fechanacimiento } = req.body;
     
@@ -134,7 +135,7 @@ router.post('/', authorizeRole([1]), async (req, res) => {
 });
 
 // PATCH /empleados/:id - Actualizar parcialmente un empleado
-router.patch('/:id', authorizeRole([1]), async (req, res) => {
+router.patch('/:id', checkPermission('editar_empleado'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -193,7 +194,7 @@ router.patch('/:id', authorizeRole([1]), async (req, res) => {
 });
 
 // DELETE /empleados/:id - Eliminar (desactivar) un empleado
-router.delete('/:id', authorizeRole([1]), async (req, res) => {
+router.delete('/:id', checkPermission('eliminar_empleado'), async (req, res) => {
   try {
     const { id } = req.params;
     
