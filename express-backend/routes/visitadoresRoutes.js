@@ -54,6 +54,8 @@ router.post('/', async (req, res) => {
   }
 });
 
+
+
 router.use(authenticateToken);
 
 // Obtener todos los visitadores médicos
@@ -63,8 +65,8 @@ router.get('/', async (req, res) => {
 
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores médicos', details: err.message });
   }
@@ -80,8 +82,8 @@ router.get('/activos', async (req, res) => {
       );
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores activos', details: err.message });
   }
@@ -99,8 +101,8 @@ router.get('/:id', async (req, res) => {
     }
     //datos filtrados 
     const formatted = formatVisitador(visitador);
-    res.json(formatted)
-    //res.json(visitador);
+    //res.json(formatted)
+    res.json(visitador);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitador médico', details: err.message });
   }
@@ -115,8 +117,8 @@ router.get('/proveedor/:proveedorId', async (req, res) => {
 
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores por proveedor', details: err.message });
   }
