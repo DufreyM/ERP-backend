@@ -27,7 +27,7 @@ const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { formatVisitador } = require('../helpers/formatters/visitadoresFormatter');
-// router.use(authenticateToken);
+const cloudinary = require('../services/cloudinary');
 
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
@@ -35,16 +35,43 @@ const RELACIONES = '[usuario, proveedor, telefonos]';
 // Crear nuevo visitador médico
 router.post('/', async (req, res) => {
   try {
-    if (req.body.usuario) {
-      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
+    let body = req.body.data ? JSON.parse(req.body.data) : req.body;
+
+    if (body.usuario) {
+      body.usuario.status = 'inactivo';
     }
 
-    const nuevo = await VisitadorMedico.query().insertGraph(req.body);
+    let documentoData = {};
+    if (req.files?.documento) {
+      const archivo = req.files.documento;
+      const resultado = await cloudinary.uploader.upload(archivo.tempFilePath, {
+        folder: 'visitadores_medicos',
+        resource_type: 'auto',
+      });
+
+      documentoData = {
+        documento_url: resultado.secure_url,
+        documento_public_id: resultado.public_id,
+        documento_nombre: archivo.name,
+        documento_mime: archivo.mimetype,
+        documento_bytes: archivo.size,
+        documento_updated_at: new Date().toISOString(),
+      };
+    }
+
+    const nuevo = await VisitadorMedico.query().insertGraph({
+      ...body,
+      ...documentoData, // usa los campos correctos del modelo
+    });
+
     res.status(201).json(nuevo);
   } catch (err) {
+    console.error('Error al crear visitador médico:', err);
     res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
   }
 });
+
+
 
 router.use(authenticateToken);
 
@@ -55,8 +82,8 @@ router.get('/', async (req, res) => {
 
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores médicos', details: err.message });
   }
@@ -72,8 +99,8 @@ router.get('/activos', async (req, res) => {
       );
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores activos', details: err.message });
   }
@@ -91,8 +118,8 @@ router.get('/:id', async (req, res) => {
     }
     //datos filtrados 
     const formatted = formatVisitador(visitador);
-    res.json(formatted)
-    //res.json(visitador);
+    //res.json(formatted)
+    res.json(visitador);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitador médico', details: err.message });
   }
@@ -107,8 +134,8 @@ router.get('/proveedor/:proveedorId', async (req, res) => {
 
     //datos filtrados 
     const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    //res.json(formatted)
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores por proveedor', details: err.message });
   }
