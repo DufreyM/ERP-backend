@@ -19,7 +19,8 @@
 // - app.js o index.js: Punto de entrada donde se importa este router.
 
 // Autor: Leonardo Dufrey Mejía Mejía, 23648
-// Última modificación: 06/08/2025
+// modificado: Renato R.
+// Última modificación: 26/10/2025
 
 const express = require('express');
 const router = express.Router();
@@ -27,7 +28,8 @@ const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { formatVisitador } = require('../helpers/formatters/visitadoresFormatter');
-const cloudinary = require('../services/cloudinary');
+const { transaction, raw } = require('objection')
+// router.use(authenticateToken);
 
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
@@ -35,38 +37,19 @@ const RELACIONES = '[usuario, proveedor, telefonos]';
 // Crear nuevo visitador médico
 router.post('/', async (req, res) => {
   try {
-    let body = req.body.data ? JSON.parse(req.body.data) : req.body;
-
-    if (body.usuario) {
-      body.usuario.status = 'inactivo';
+    if (req.body.usuario) {
+      req.body.usuario.status = 'inactivo';
     }
 
-    let documentoData = {};
-    if (req.files?.documento) {
-      const archivo = req.files.documento;
-      const resultado = await cloudinary.uploader.upload(archivo.tempFilePath, {
-        folder: 'visitadores_medicos',
-        resource_type: 'auto',
-      });
-
-      documentoData = {
-        documento_url: resultado.secure_url,
-        documento_public_id: resultado.public_id,
-        documento_nombre: archivo.name,
-        documento_mime: archivo.mimetype,
-        documento_bytes: archivo.size,
-        documento_updated_at: new Date().toISOString(),
-      };
-    }
-
-    const nuevo = await VisitadorMedico.query().insertGraph({
-      ...body,
-      ...documentoData, // usa los campos correctos del modelo
+    const nuevo = await transaction(VisitadorMedico.knex(), async (trx) => {
+      // insertGraph dentro del trx
+      const inserted = await VisitadorMedico.query(trx).insertGraph(req.body);
+      return inserted;
     });
 
     res.status(201).json(nuevo);
   } catch (err) {
-    console.error('Error al crear visitador médico:', err);
+    console.error('Error al crear visitador:', err);
     res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
   }
 });
@@ -191,84 +174,90 @@ router.put('/:id', async (req, res) => {
   const data = req.body;
 
   try {
-    // Validar existencia de objeto usuario
+    // Validaciones previas sin trx...
     if (!data.usuario || typeof data.usuario !== 'object') {
       return res.status(400).json({ error: 'El objeto usuario es obligatorio' });
     }
-
-    // Verificar que telefonos sea arreglo
     if (data.telefonos && !Array.isArray(data.telefonos)) {
       return res.status(400).json({ error: 'El campo telefonos debe ser un arreglo' });
     }
 
-    // Buscar el visitador con sus relaciones
-    const visitador = await VisitadorMedico.query()
-      .findById(visitadorId)
-      .withGraphFetched('[usuario, telefonos]');
+    const resultado = await transaction(VisitadorMedico.knex(), async (trx) => {
+      // 1) Buscar visitador dentro del trx
+      const visitador = await VisitadorMedico.query(trx)
+        .findById(visitadorId)
+        .withGraphFetched('[usuario, telefonos]');
 
-    if (!visitador) {
-      return res.status(404).json({ error: 'Visitador no encontrado' });
-    }
+      if (!visitador) {
+        const e = new Error('Visitador no encontrado');
+        e.status = 404;
+        throw e;
+      }
 
-    // 🔹 Actualizar usuario relacionado
-    await Usuario.query()
-      .patch({
-        nombre: data.usuario.nombre,
-        apellidos: data.usuario.apellidos,
-        email: data.usuario.email,
-        fechanacimiento: data.usuario.fechanacimiento,
-        rol_id: data.usuario.rol_id,
-        status: data.usuario.status,
-        // Si viene "unchanged", no modificar contraseña
-        ...(data.usuario.contrasena !== 'unchanged' && {
-          contrasena: data.usuario.contrasena,
-        }),
-      })
-      .where('id', visitador.usuario_id);
+      // 2) Actualizar usuario relacionado
+      await Usuario.query(trx)
+        .patch({
+          nombre: data.usuario.nombre,
+          apellidos: data.usuario.apellidos,
+          email: data.usuario.email,
+          fechanacimiento: data.usuario.fechanacimiento,
+          rol_id: data.usuario.rol_id,
+          status: data.usuario.status,
+          ...(data.usuario.contrasena !== 'unchanged' && {
+            contrasena: data.usuario.contrasena,
+          }),
+        })
+        .where('id', visitador.usuario_id);
 
-    // 🔹 Actualizar datos del visitador
-    await VisitadorMedico.query()
-      .patch({
-        proveedor_id: data.proveedor_id ?? null,
-      })
-      .where('id', visitadorId);
+      // 3) Actualizar datos del visitador
+      await VisitadorMedico.query(trx)
+        .patch({
+          proveedor_id: data.proveedor_id ?? null,
+        })
+        .where('id', visitadorId);
 
-    // 🔹 Actualizar o crear teléfonos
-    if (data.telefonos && data.telefonos.length > 0) {
-      const Telefono = require('../models/Telefono');
+      // 4) Actualizar o crear teléfonos (usar modelo Teléfono con trx)
+      if (data.telefonos && data.telefonos.length > 0) {
+        const Telefono = require('../models/Telefono');
 
-      for (const tel of data.telefonos) {
-        if (tel.id) {
-          // Si existe id → actualizar
-          await Telefono.query()
-            .patch({
+        for (const tel of data.telefonos) {
+          if (tel.id) {
+            // actualizar
+            await Telefono.query(trx)
+              .patch({
+                numero: tel.numero,
+                tipo: tel.tipo,
+              })
+              .where('id', tel.id);
+          } else {
+            // crear nuevo
+            await Telefono.query(trx).insert({
               numero: tel.numero,
               tipo: tel.tipo,
-            })
-            .where('id', tel.id);
-        } else {
-          // Si no existe id → crear nuevo
-          await Telefono.query().insert({
-            numero: tel.numero,
-            tipo: tel.tipo,
-            visitador_id: visitadorId,
-          });
+              visitador_id: visitadorId,
+            });
+          }
         }
       }
-    }
 
-    // 🔹 Devolver visitador actualizado con sus relaciones
-    const actualizado = await VisitadorMedico.query()
-      .findById(visitadorId)
-      .withGraphFetched('[usuario, proveedor, telefonos]');
+      // 5) Traer la entidad actualizada y devolverla
+      const actualizado = await VisitadorMedico.query(trx)
+        .findById(visitadorId)
+        .withGraphFetched('[usuario, proveedor, telefonos]');
+
+      return actualizado;
+    }); 
 
     res.json({
       ok: true,
       message: 'Visitador actualizado correctamente',
-      visitador: actualizado,
+      visitador: resultado,
     });
   } catch (err) {
     console.error('Error al actualizar visitador:', err);
+    if (err.status === 404) {
+      return res.status(404).json({ error: err.message });
+    }
     res.status(500).json({
       error: 'Error al actualizar visitador',
       details: err.message,
@@ -291,16 +280,26 @@ router.get('/:id/telefonos', async (req, res) => {
 // Activar/Desactivar visitador (usuario.status)
 async function cambiarEstadoUsuario(req, res, estado) {
   try {
-    const visitador = await VisitadorMedico.query()
-      .findById(req.params.id)
-      .withGraphFetched('usuario');
+    const result = await transaction(VisitadorMedico.knex(), async (trx) => {
+      const visitador = await VisitadorMedico.query(trx)
+        .findById(req.params.id)
+        .withGraphFetched('usuario');
 
-    if (!visitador) return res.status(404).json({ error: 'Visitador no encontrado' });
+      if (!visitador) {
+        const e = new Error('Visitador no encontrado');
+        e.status = 404;
+        throw e;
+      }
 
-    await Usuario.query().patch({ status: estado }).where('id', visitador.usuario_id);
+      await Usuario.query(trx).patch({ status: estado }).where('id', visitador.usuario_id);
+
+      return true;
+    });
 
     res.json({ message: `Visitador ${estado === 'activo' ? 'activado' : 'desactivado'}` });
   } catch (err) {
+    console.error(err);
+    if (err.status === 404) return res.status(404).json({ error: err.message });
     res.status(500).json({ error: `Error al cambiar estado a ${estado}`, details: err.message });
   }
 }
@@ -317,12 +316,20 @@ router.patch('/:id/telefonos', async (req, res) => {
 
     telefonos = telefonos.map(String).map(s => s.trim()).filter(Boolean);
 
-    const updated = await VisitadorMedico.query().patchAndFetchById(id, { telefonos });
-    if (!updated) return res.status(404).json({ error: 'Visitador no encontrado' });
+    const updated = await transaction(VisitadorMedico.knex(), async (trx) => {
+      const u = await VisitadorMedico.query(trx).patchAndFetchById(id, { telefonos });
+      if (!u) {
+        const e = new Error('Visitador no encontrado');
+        e.status = 404;
+        throw e;
+      }
+      return u;
+    });
 
     res.json({ ok: true, visitador: updated });
   } catch (e) {
     console.error(e);
+    if (e.status === 404) return res.status(404).json({ error: e.message });
     res.status(500).json({ error: 'Error actualizando teléfonos' });
   }
 });
@@ -341,7 +348,7 @@ router.post('/:id/documento', async (req, res) => {
       return res.status(400).json({ error: 'El archivo debe ser PDF' });
     }
 
-    // 1) Subir el nuevo PDF
+    // 1) Subir el nuevo PDF a Cloudinary
     const uploaded = await cloudinary.uploader.upload(pdf.tempFilePath, {
       resource_type: 'raw',
       folder: 'econofarma/visitadores',
@@ -349,37 +356,59 @@ router.post('/:id/documento', async (req, res) => {
       unique_filename: true
     });
 
-    // 2) Si había uno anterior, borrarlo
-    if (visitador.documento_public_id) {
+    // Si algo falla en la BD, debemos borrar 'uploaded' para no dejar basura.
+    try {
+      const updated = await transaction(VisitadorMedico.knex(), async (trx) => {
+        // Actualizar metadata en BD dentro de trx
+        const u = await VisitadorMedico.query(trx).patchAndFetchById(id, {
+          documento_url: uploaded.secure_url,
+          documento_public_id: uploaded.public_id,
+          documento_nombre: pdf.name,
+          documento_mime: pdf.mimetype,
+          documento_bytes: pdf.size,
+          documento_updated_at: raw('now()')
+        });
+
+        if (!u) {
+          const e = new Error('Visitador no encontrado');
+          e.status = 404;
+          throw e;
+        }
+
+        // Intentar borrar el anterior en Cloudinary (si existía).
+        // Lo hacemos fuera del trx (pero dentro del bloque exitoso) — si falla, solo lo logueamos.
+        if (visitador.documento_public_id) {
+          try {
+            await cloudinary.uploader.destroy(visitador.documento_public_id, { resource_type: 'raw' });
+          } catch (e) {
+            console.warn('No se pudo borrar el documento anterior en Cloudinary:', e.message);
+          }
+        }
+
+        return u;
+      });
+
+      res.status(201).json({ ok: true, documento: {
+        url: updated.documento_url,
+        public_id: updated.documento_public_id,
+        nombre: updated.documento_nombre,
+        mime: updated.documento_mime,
+        bytes: updated.documento_bytes,
+        updated_at: updated.documento_updated_at
+      }});
+    } catch (e) {
+      // Si la BD falló después del upload, borrar el archivo subido para evitar assets huérfanos.
       try {
-        await cloudinary.uploader.destroy(visitador.documento_public_id, { resource_type: 'raw' });
-      } catch (e) {
-        // No hacemos rollback de la subida nueva; solo log.
-        console.warn('No se pudo borrar el documento anterior en Cloudinary:', e.message);
+        await cloudinary.uploader.destroy(uploaded.public_id, { resource_type: 'raw' });
+      } catch (delErr) {
+        console.warn('No se pudo borrar el upload nuevo tras fallo en BD:', delErr.message);
       }
+      throw e; // lo re-lanzamos para ser manejado en el catch externo
     }
-
-    // 3) Guardar metadata nueva
-    const updated = await VisitadorMedico.query().patchAndFetchById(id, {
-      documento_url: uploaded.secure_url,
-      documento_public_id: uploaded.public_id,
-      documento_nombre: pdf.name,
-      documento_mime: pdf.mimetype,
-      documento_bytes: pdf.size,
-      documento_updated_at: raw('now()')
-    });
-
-    res.status(201).json({ ok: true, documento: {
-      url: updated.documento_url,
-      public_id: updated.documento_public_id,
-      nombre: updated.documento_nombre,
-      mime: updated.documento_mime,
-      bytes: updated.documento_bytes,
-      updated_at: updated.documento_updated_at
-    }});
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Error al subir/reemplazar el documento' });
+    if (e.status === 404) return res.status(404).json({ error: e.message });
+    res.status(500).json({ error: 'Error al subir/reemplazar el documento', details: e.message });
   }
 });
 
@@ -407,6 +436,7 @@ router.delete('/:id/documento', async (req, res) => {
     const v = await VisitadorMedico.query().findById(id);
     if (!v) return res.status(404).json({ error: 'Visitador no encontrado' });
 
+    // Intentar borrar en Cloudinary (si hay public_id). No hacemos rollback del DB si falla el destroy.
     if (v.documento_public_id) {
       try {
         await cloudinary.uploader.destroy(v.documento_public_id, { resource_type: 'raw' });
@@ -415,13 +445,15 @@ router.delete('/:id/documento', async (req, res) => {
       }
     }
 
-    await VisitadorMedico.query().patchAndFetchById(id, {
-      documento_url: null,
-      documento_public_id: null,
-      documento_nombre: null,
-      documento_mime: null,
-      documento_bytes: null,
-      documento_updated_at: null
+    await transaction(VisitadorMedico.knex(), async (trx) => {
+      await VisitadorMedico.query(trx).patchAndFetchById(id, {
+        documento_url: null,
+        documento_public_id: null,
+        documento_nombre: null,
+        documento_mime: null,
+        documento_bytes: null,
+        documento_updated_at: null
+      });
     });
 
     res.json({ ok: true });
