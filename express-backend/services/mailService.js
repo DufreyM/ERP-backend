@@ -363,7 +363,7 @@ router.post('/login', async (req, res) => {
             email: usuario.email,
             rol_id: usuario.rol_id,
             local_id: usuario.id_local // Asegúrate de incluir el local_id
-        }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        }, process.env.JWT_SECRET, { expiresIn: '1hbuen' });
 
         let redirectUrl;
 
@@ -452,7 +452,15 @@ router.post('/change-password',
                 .where({ id: userId });
 
             // Enviar correo de notificación
-            await sendPasswordChangedEmail(usuario.email);
+            try {
+                await sendPasswordChangedEmail(usuario.email);
+            } catch (mailError) {
+                console.error('Error enviando correo de cambio de contraseña:', mailError);
+                // Puedes opcionalmente enviar un mensaje de advertencia al frontend
+                return res.status(200).json({ 
+                    message: 'Contraseña cambiada exitosamente, pero no se pudo enviar la notificación por correo.'
+                });
+            }
 
             res.status(200).json({ 
                 message: 'Contraseña cambiada exitosamente. Se ha enviado una notificación a tu correo.' 
