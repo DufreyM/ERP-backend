@@ -65,7 +65,6 @@ INSERT INTO permisos (nombre, descripcion, modulo_id) VALUES
 ('ver_tareas', 'Ver tareas pendientes', 13),
 
 -- Permisos para movimientos de inventario
-('registrar_movimiento', 'Registrar movimientos de inventario', 13),
 
 -- Permiso para buscar cliente por NIT
 ('buscar_cliente_nit', 'Buscar cliente específico por NIT', 4),
@@ -74,7 +73,13 @@ INSERT INTO permisos (nombre, descripcion, modulo_id) VALUES
 ('ver_empleados', 'Ver listado de empleados del sistema', 10),
 ('crear_empleado', 'Crear un nuevo empleado', 10),
 ('editar_empleado', 'Editar datos de empleados', 10),
-('eliminar_empleado', 'Eliminar empleado (Cambiar status a inactivo)', 10);
+('eliminar_empleado', 'Eliminar empleado (Cambiar status a inactivo)', 10),
+
+-- Permisos para movimientos de inventario
+('registrar_movimiento', 'Registrar movimientos de inventario', 5),
+('ver_movimientos_inventario', 'Ver historial de movimientos de inventario', 5),
+('editar_movimiento_inventario', 'Permite editar un movimiento de inventario existente', 5),
+('eliminar_movimiento_inventario', 'Permite eliminar un registro de movimiento del inventario', 5);
 
 INSERT INTO permisos_roles (rol_id, permiso_id) VALUES 
 (1, 57),
@@ -104,4 +109,14 @@ INSERT INTO permisos_roles (rol_id, permiso_id) VALUES
 (1, 70),
 (1, 71),
 (1, 72),
-(1, 73);
+(1, 73),
+
+-- Asignar permisos a admin para inventario
+(1, 73),
+(1, 74),
+(1, 75),
+(1, 76),
+-- Para la dependienta
+(2, 5),
+(2, 16),
+(2, 20);
