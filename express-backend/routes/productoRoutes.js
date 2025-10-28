@@ -4,6 +4,7 @@ const Producto = require('../models/Producto');
 const { obtenerProductosConStock } = require('../services/productoService');
 const { buscarProductosConStock } = require('../services/productoService');
 const authenticateToken = require('../middlewares/authMiddleware');
+const cloudinary = require('../services/cloudinary');
 
 router.use(authenticateToken);
 
