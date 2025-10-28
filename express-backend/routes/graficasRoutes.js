@@ -147,6 +147,65 @@ router.get('/top-clientes', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Error al obtener top clientes', details: err.message });
   }
+}); 
+
+// ---------------------------
+// Ventas últimos 12 meses
+// ---------------------------
+router.get('/ventas-12-meses', async (req, res) => {
+  const { local_id } = req.query;
+
+  try {
+    const hoy = new Date();
+    const meses = [];
+
+    // Generamos los últimos 12 meses
+    for (let i = 11; i >= 0; i--) {
+      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      meses.push({
+        fecha,
+        key: fecha.toISOString().slice(0, 7) // "YYYY-MM"
+      });
+    }
+
+    // Query de ventas dentro de ese rango
+    let ventasQuery = Venta.query()
+      .select(
+        raw(`DATE_TRUNC('month', created_at) AS mes`),
+        raw(`SUM(total)::numeric(10,2) AS total_ventas`)
+      )
+      .where('created_at', '>=', meses[0].fecha)
+      .groupBy('mes')
+      .orderBy('mes');
+
+    // Filtrar por local_id si se pasa
+    if (local_id) {
+      ventasQuery = ventasQuery.whereExists(
+        Venta.relatedQuery('detalles')
+          .join('lotes as l', 'detalles.lote_id', 'l.id')
+          .join('inventario as i', 'i.lote_id', 'l.id')
+          .where('i.local_id', local_id)
+      );
+    }
+
+    const ventas = await ventasQuery;
+
+    // Mapear resultados a todos los meses
+    const resultado = meses.map(m => {
+      const venta = ventas.find(v => v.mes.toISOString().slice(0,7) === m.key);
+      return {
+        mes: m.fecha,
+        total_ventas: venta ? Number(venta.total_ventas) : 0
+      };
+    });
+
+    res.json(resultado);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener ventas últimos 12 meses', details: err.message });
+  }
 });
+
+
 
 module.exports = router;
