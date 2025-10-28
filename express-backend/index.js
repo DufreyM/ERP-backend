@@ -105,3 +105,6 @@ app.use('/clientes', clientesRouter);              // <= NUEVO
 
 const transferenciasRouter = require('./services/transferenciasService');
 app.use('/transferencias', transferenciasRouter);
+
+const graficasRoutes = require('./routes/graficasRoutes');
+app.use('/graficas', graficasRoutes);
