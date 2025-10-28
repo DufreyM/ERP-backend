@@ -6,8 +6,6 @@ const { buscarProductosConStock } = require('../services/productoService');
 const authenticateToken = require('../middlewares/authMiddleware');
 const cloudinary = require('../services/cloudinary');
 
-router.use(authenticateToken);
-
 // ✅ Obtener todos los productos con stock
 router.get('/con-stock', async (req, res) => {
   try {
@@ -47,6 +45,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     let imagenURL = null;
+
+    if (req.body.proveedor_id) {
+      req.body.proveedor_id = parseInt(req.body.proveedor_id);
+    }
 
     // Si se sube archivo
     if (req.files?.imagen) {
