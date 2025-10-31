@@ -31,14 +31,14 @@ app.use(helmet());
 
 // Limitar peticiones (previene ataques de fuerza bruta y DDoS)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 solicitudes por IP
+  windowMs: 30 * 60 * 1000, // 15 minutos
+  max: 10000, // máximo 100 solicitudes por IP
   message: 'Demasiadas solicitudes desde esta IP, intenta más tarde.'
 });
 app.use(limiter);
 
 app.use(cors({
-  origin: 'http://localhost:3001', 
+  origin: `${process.env.URL}`, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
@@ -97,7 +97,7 @@ const empleadosRoutes = require('./routes/empleadoRoutes');
 app.use('/api/empleados', empleadosRoutes);
 
 app.listen(port, () => {
-  console.log(`🚀 Servidor Express en http://localhost:${port}`);
+  console.log(`🚀 App en ${process.env.URL}`);
 });
 
 const clientesRouter = require('./routes/Clientes');   // <= NUEVO
@@ -108,3 +108,6 @@ app.use('/transferencias', transferenciasRouter);
 
 const permissionRouter = require('./routes/permissionRouter');
 app.use('/api/permisos', permissionRouter);
+
+const graficasRoutes = require('./routes/graficasRoutes');
+app.use('/graficas', graficasRoutes);
