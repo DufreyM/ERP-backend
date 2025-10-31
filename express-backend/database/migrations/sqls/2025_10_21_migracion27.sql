@@ -88,7 +88,12 @@ INSERT INTO permisos (nombre, descripcion, modulo_id) VALUES
 ('eliminar_proveedor', 'Eliminar proveedor (Cambiar status a inactivo)', 7),
 
 -- Visitadores médicos
-('eliminar_visitador_medico', 'Eliminar o desactivar visitadores médicos', 7)
+('eliminar_visitador_medico', 'Eliminar o desactivar visitadores médicos', 7),
+
+-- Documentos locales
+('ver_documentos_locales', 'Ver listado de documentos locales (solo lectura)', 12),
+('eliminar_documento_local', 'Eliminar (lógicamente) un documento local', 12),
+('subir_documentos_locales', 'Subir documentos necesarios para el manejo de la farmacia', 12)
 ;
 
 INSERT INTO permisos_roles (rol_id, permiso_id) VALUES 
@@ -136,9 +141,14 @@ INSERT INTO permisos_roles (rol_id, permiso_id) VALUES
 (1, 78),
 (1, 79),
 (1, 80),
+
 -- Para dependienta
 (2, 77),
 
 -- Eliminar visitador admin
-(1, 78)
+(1, 81),
+
+(1, 82),
+(1, 83),
+(1, 84)
 ;
