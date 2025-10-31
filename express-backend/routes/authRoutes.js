@@ -293,6 +293,10 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ error: 'Correo no verificado' });
         }
 
+        if (usuario.status !== 'activo') {
+            return res.status(403).json({ error: 'Usuario inactivo. Contacte al administrador.' });
+        }
+
         const token = jwt.sign({
             id: usuario.id,
             email: usuario.email,

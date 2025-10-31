@@ -79,7 +79,17 @@ INSERT INTO permisos (nombre, descripcion, modulo_id) VALUES
 ('registrar_movimiento', 'Registrar movimientos de inventario', 5),
 ('ver_movimientos_inventario', 'Ver historial de movimientos de inventario', 5),
 ('editar_movimiento_inventario', 'Permite editar un movimiento de inventario existente', 5),
-('eliminar_movimiento_inventario', 'Permite eliminar un registro de movimiento del inventario', 5);
+('eliminar_movimiento_inventario', 'Permite eliminar un registro de movimiento del inventario', 5),
+
+-- Proveedores
+('ver_proveedores', 'Ver listado de proveedores', 7),
+('crear_proveedor', 'Crear un nuevo proveedor', 7),
+('editar_proveedor', 'Editar datos de proveedores', 7),
+('eliminar_proveedor', 'Eliminar proveedor (Cambiar status a inactivo)', 7),
+
+-- Visitadores médicos
+('eliminar_visitador_medico', 'Eliminar o desactivar visitadores médicos', 7)
+;
 
 INSERT INTO permisos_roles (rol_id, permiso_id) VALUES 
 (1, 57),
@@ -119,4 +129,16 @@ INSERT INTO permisos_roles (rol_id, permiso_id) VALUES
 -- Para la dependienta
 (2, 5),
 (2, 16),
-(2, 20);
+(2, 20),
+
+-- Permisos de proveedores a admin
+(1, 77),
+(1, 78),
+(1, 79),
+(1, 80),
+-- Para dependienta
+(2, 77),
+
+-- Eliminar visitador admin
+(1, 78)
+;

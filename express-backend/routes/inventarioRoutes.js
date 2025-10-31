@@ -27,6 +27,7 @@ router.get(
   checkPermission('ver_inventario'),
   async (req, res) => {
     try {
+      console.log("Permiso: ver_inventario")
       const inventario = await Inventario.query().withGraphFetched('[lote, tipoMovimiento, venta, compra, local, encargado]');
       res.json(inventario);
     } catch (err) {

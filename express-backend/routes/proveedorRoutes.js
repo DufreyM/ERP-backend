@@ -4,15 +4,16 @@ const Proveedor = require('../models/Proveedor');
 const Telefono = require('../models/Telefono');
 const Visitador = require('../models/VisitadorMedico');
 
+const auth = require('../middlewares/authMiddleware');
+const checkPermission = require('../middlewares/checkPermission');
+
 // Relaciones a traer por defecto
 const RELACIONES = '[telefonos, visitadores]';
-
-const auth = require('../middlewares/authMiddleware');
 
 router.use(auth);
 
 // 📌 Obtener todos los proveedores
-router.get('/', async (req, res) => {
+router.get('/', checkPermission('ver_proveedores'), async (req, res) => {
   try {
     const proveedores = await Proveedor.query().withGraphFetched(RELACIONES);
     res.json(proveedores);
@@ -22,7 +23,7 @@ router.get('/', async (req, res) => {
 });
 
 // 📌 Obtener proveedor por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', checkPermission('ver_proveedores'), async (req, res) => {
   try {
     const proveedor = await Proveedor.query()
       .findById(req.params.id)
@@ -37,7 +38,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 📌 Crear proveedor
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('crear_proveedor'), async (req, res) => {
   try {
     const nuevo = await Proveedor.query().insertGraph(req.body);
     res.status(201).json(nuevo);
@@ -47,7 +48,7 @@ router.post('/', async (req, res) => {
 });
 
 // 📌 Actualizar proveedor
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('editar_proveedor'), async (req, res) => {
   try {
     const actualizado = await Proveedor.query().patchAndFetchById(req.params.id, req.body);
     if (!actualizado) return res.status(404).json({ error: 'Proveedor no encontrado' });
@@ -59,7 +60,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // 📌 Eliminar proveedor
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkPermission('eliminar_proveedor'), async (req, res) => {
   try {
     const filas = await Proveedor.query().deleteById(req.params.id);
     if (!filas) return res.status(404).json({ error: 'Proveedor no encontrado' });
