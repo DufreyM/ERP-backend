@@ -17,7 +17,7 @@ class Permiso extends Model {
         id: { type: 'integer' },
         nombre: { type: 'string', maxLength: 255 },
         descripcion: { type: ['string', 'null'] },
-        modulo: { type: ['string', 'null'], maxLength: 50 }
+        modulo: { type: ['string', 'null'], maxLength: 50 } // Agregar esta línea
       }
     };
   }
