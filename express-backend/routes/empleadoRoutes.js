@@ -20,11 +20,9 @@ const Usuario = require('../models/Usuario');
 const auth = require('../middlewares/authMiddleware');
 const authorizeRole = require('../middlewares/authorizeRole');
 const checkPermission = require('../middlewares/checkPermission');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-
-// CORRECCIÓN: Importar mailService correctamente
 const mailService = require('../services/mailService');
+const bcrypt = require('bcryptjs');
+const { formatEmpleado } = require('../helpers/formatters/empleadoFormatter');
 
 function generateToken() {
   return crypto.randomBytes(16).toString('hex');
@@ -34,48 +32,43 @@ function generateToken() {
 router.use(auth);
 
 // GET /empleados - Obtener lista de empleados con filtros
-router.get('/', checkPermission('ver_empleados'), async (req, res) => {
+router.get('/', checkPermission('ver_empleados'), authorizeRole([1]), async (req, res) => {
   try {
     const { rol_id, status, id_local, page = 1, limit = 10 } = req.query;
-    
-    // Construir query base - solo empleados (rol_id 1 o 2)
     let query = Usuario.query()
-      .whereIn('rol_id', [1, 2])
+      .whereNot('rol_id', 5) 
+      .whereNot('id', req.user.id) // Excluir al usuario autenticado
       .withGraphFetched('[rol, local]')
       .orderBy('id', 'desc');
-    
-    // Aplicar filtros si existen
+
     if (rol_id) query = query.where('rol_id', rol_id);
     if (status) query = query.where('status', status);
     if (id_local) query = query.where('id_local', id_local);
-    
-    // Paginación
+
     const offset = (page - 1) * limit;
-    const empleados = await query
-      .offset(offset)
-      .limit(limit);
-    
-    // Contar total de registros
+    const empleados = await query.offset(offset).limit(limit);
+
     const totalQuery = Usuario.query()
-      .whereIn('rol_id', [1, 2])
-      .count('id as count')
-      .first();
+      .whereNot('rol_id', 5)
+      .whereNot('id', req.user.id);
     
     if (rol_id) totalQuery.where('rol_id', rol_id);
     if (status) totalQuery.where('status', status);
     if (id_local) totalQuery.where('id_local', id_local);
-    
-    const totalCount = await totalQuery;
+
+    const totalCount = await totalQuery.count('id as count').first();
     const total = parseInt(totalCount.count);
-    
+
+    const formatted = empleados.map(formatEmpleado);
+
     res.json({
-      empleados,
+      empleados: formatted,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('Error al obtener empleados:', error);
@@ -89,14 +82,15 @@ router.get('/:id', checkPermission('ver_empleados'), authorizeRole([1]), async (
     const { id } = req.params;
     const empleado = await Usuario.query()
       .findById(id)
-      .whereIn('rol_id', [1, 2])
+      .whereNot('rol_id', 5)
       .withGraphFetched('[rol, local]');
     
     if (!empleado) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
-    
-    res.json(empleado);
+
+    const formatted = formatEmpleado(empleado);
+    res.json(formatted);
   } catch (error) {
     console.error('Error al obtener empleado:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -104,64 +98,46 @@ router.get('/:id', checkPermission('ver_empleados'), authorizeRole([1]), async (
 });
 
 // POST /empleados - Crear un nuevo empleado
-router.post('/', checkPermission('crear_empleado'), async (req, res) => {
+router.post('/', checkPermission('crear_empleado'), authorizeRole([1]), async (req, res) => {
+  const trx = await Usuario.startTransaction();
   try {
     const { nombre, apellidos, rol_id, email, status, id_local, contrasena, fechanacimiento } = req.body;
     
-    // Validaciones básicas
     if (!nombre || !apellidos || !rol_id || !email || !status || !contrasena || !fechanacimiento) {
       return res.status(400).json({ error: 'Faltan campos obligatorios' });
     }
-    
-    // Verificar que el rol sea válido (solo 1 o 2)
-    if (![1, 2].includes(parseInt(rol_id))) {
-      return res.status(400).json({ error: 'Rol no válido para empleados' });
-    }
-    
-    // Verificar si el email ya existe
-    const existeEmail = await Usuario.query().findOne({ email });
+
+    const existeEmail = await Usuario.query(trx).findOne({ email });
     if (existeEmail) {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
 
-    // Generar token de verificación
+    const hashedPassword = await bcrypt.hash(contrasena, 10);
     const token = mailService.generateToken();
     
-    // Hash de la contraseña
-    const hashedPassword = await bcrypt.hash(contrasena, 10);
-    
-    // Crear el empleado
-    const nuevoEmpleado = await Usuario.query().insert({
+    const nuevoEmpleado = await Usuario.query(trx).insert({
       nombre,
       apellidos,
       rol_id,
       email,
-      status: 'inactivo', // Siempre inactivo hasta verificación
-      id_local: id_local || null,
+      status: 'inactivo', // Inicialmente inactivo hasta verificación
+      id_local,
       contrasena: hashedPassword,
       fechanacimiento,
       token, // Guardar el token para verificación
       verificado: false // Inicialmente no verificado
     });
     
-    // Enviar correo de verificación
-    try {
-      await mailService.sendVerificationEmail(email, token);
-      
-      res.status(201).json({
-        ...nuevoEmpleado,
-        message: 'Empleado creado exitosamente. Se ha enviado un correo de verificación.'
-      });
-    } catch (emailError) {
-      console.error('Error al enviar correo de verificación:', emailError);
-      // Si falla el correo, eliminar el usuario creado
-      await Usuario.query().deleteById(nuevoEmpleado.id);
-      return res.status(500).json({ 
-        error: 'Error al enviar correo de verificación. El empleado no fue creado.' 
-      });
-    }
+    await mailService.sendVerificationEmail(email, token);
     
+    await trx.commit();
+
+    res.status(201).json({
+      ...nuevoEmpleado,
+      message: 'Empleado creado exitosamente. Se ha enviado un correo de verificación.'
+    });
   } catch (error) {
+    await trx.rollback();
     console.error('Error al crear empleado:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
@@ -169,13 +145,12 @@ router.post('/', checkPermission('crear_empleado'), async (req, res) => {
 
 // PATCH /empleados/:id - Actualizar parcialmente un empleado
 router.patch('/:id', checkPermission('editar_empleado'), async (req, res) => {
+ const trx = await Usuario.startTransaction(); // Inicia la transacción
   try {
     const { id } = req.params;
     
-    // Verificar que el empleado existe y es de rol 1 o 2
-    const empleadoExistente = await Usuario.query()
-      .findById(id)
-      .whereIn('rol_id', [1, 2]);
+    // Verificar que el empleado existe
+    const empleadoExistente = await Usuario.query(trx).findById(id).whereNot('rol_id', 5);
     
     if (!empleadoExistente) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
@@ -197,14 +172,9 @@ router.patch('/:id', checkPermission('editar_empleado'), async (req, res) => {
       return res.status(400).json({ error: 'No se proporcionaron campos válidos para actualizar' });
     }
 
-    // Validar que el rol sea válido (solo 1 o 2) si se está actualizando
-    if (datosActualizados.rol_id && ![1, 2].includes(parseInt(datosActualizados.rol_id))) {
-      return res.status(400).json({ error: 'Rol no válido para empleados' });
-    }
-
-    // Verificar si el email ya existe en otro usuario (solo si se está actualizando el email)
+    // Verificar si el email ya existe en otro usuario
     if (datosActualizados.email && datosActualizados.email !== empleadoExistente.email) {
-      const existeEmail = await Usuario.query()
+      const existeEmail = await Usuario.query(trx)
         .where('email', datosActualizados.email)
         .whereNot('id', id)
         .first();
@@ -214,40 +184,54 @@ router.patch('/:id', checkPermission('editar_empleado'), async (req, res) => {
       }
     }
 
-    // Actualizar el empleado
-    const empleadoActualizado = await Usuario.query()
+    // Actualizar el empleado dentro de la transacción
+    const empleadoActualizado = await Usuario.query(trx)
       .patchAndFetchById(id, datosActualizados)
       .withGraphFetched('[rol, local]');
 
+    // Si todo va bien, confirmar la transacción
+    await trx.commit();
     res.json(empleadoActualizado);
+  
   } catch (error) {
     console.error('Error al actualizar empleado:', error);
+
+    // Si ocurre un error, revertir los cambios
+    await trx.rollback();
+
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // DELETE /empleados/:id - Eliminar (desactivar) un empleado
 router.delete('/:id', checkPermission('eliminar_empleado'), async (req, res) => {
+  const trx = await Usuario.startTransaction(); // Inicia la transacción
   try {
     const { id } = req.params;
-    
-    // Verificar que el empleado existe y es de rol 1 o 2
-    const empleadoExistente = await Usuario.query()
-      .findById(id)
-      .whereIn('rol_id', [1, 2]);
+
+    // Verificar si el empleado existe
+    const empleadoExistente = await Usuario.query(trx).findById(id).whereNot('rol_id', 5);
     
     if (!empleadoExistente) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
-    
-    // En lugar de eliminar, cambiamos el status a inactivo
-    await Usuario.query()
-      .patch({ status: 'inactivo' })
-      .where('id', id);
-    
-    res.json({ message: 'Empleado desactivado correctamente' });
+
+    // Desactivar el empleado (cambiar su estado a "inactivo")
+    const empleadoDesactivado = await Usuario.query(trx)
+      .patchAndFetchById(id, { status: 'inactivo' });
+
+    // Confirmar la transacción
+    await trx.commit();
+
+    res.json({
+      message: 'Empleado desactivado exitosamente',
+      empleado: empleadoDesactivado
+    });
+  
   } catch (error) {
     console.error('Error al desactivar empleado:', error);
+    // Si ocurre un error, revertir la transacción
+    await trx.rollback();
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
