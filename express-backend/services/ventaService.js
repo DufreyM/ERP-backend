@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
         throw new Error('Cada detalle debe tener producto_id y cantidad > 0');
       }
 
-            // --- inicio del bloque reemplazado por producto --
+      // --- inicio del bloque procesar producto por lotes ---
       const producto = await trx('productos')
         .select('precioventa', 'preciocosto', 'nombre', 'codigo')
         .where('codigo', item.producto_id)
@@ -102,8 +102,7 @@ router.post('/', async (req, res) => {
         if (s > 0) lotesConStock.push({ ...lote, stock: s });
       }
 
-      // == Nueva parte: determinar el precio más alto entre lotes con stock ==
-      // Además, guardamos la "última compra con precio" por lote para reutilizarla.
+      // == Determinar el precio más alto entre lotes con stock ==
       let precioUnitarioMasAlto = precioPorDefecto;
       const ultimaPorLote = {}; // { [loteId]: { precio_venta, precio_costo, ... } | null }
       for (const lote of lotesConStock) {
@@ -165,13 +164,14 @@ router.post('/', async (req, res) => {
       if (cantidadRestante > 0) {
         throw new Error(`Stock insuficiente para el producto "${producto.nombre}". Solicitado: ${cant}, disponible: ${cant - cantidadRestante}`);
       }
+    } 
 
-    // --- 🚨 Validaciones fiscales ---
+    // --- 🚨 Validaciones fiscales (fuera del for, se evalúan ya con el total final) ---
     const nit = cliente?.nit?.trim() || null;
 
     // Si total > Q2500 → NIT requerido y no puede ser CF
     if (total > 2500 && (!nit || nit.toUpperCase() === 'CF')) {
-      await trx.rollback();
+      try { await trx.rollback(); } catch (_) {}
       return res.status(400).json({
         error: 'Para ventas mayores a Q2500 se requiere un NIT válido (no se permite CF).'
       });
@@ -181,12 +181,12 @@ router.post('/', async (req, res) => {
     if (nit && nit.toUpperCase() !== 'CF') {
       const limpio = nit.replace(/-/g, '');
       if (!/^[0-9]+[0-9kK]$/.test(limpio)) {
-        await trx.rollback();
+        try { await trx.rollback(); } catch (_) {}
         return res.status(400).json({ error: 'El NIT ingresado no tiene un formato válido.' });
       }
     }
 
-    // --- Guardar total final ---
+    // --- Guardar total final y confirmar transacción ---
     await Venta.query(trx).findById(nuevaVenta.id).patch({ total });
     await trx.commit();
 
@@ -194,7 +194,8 @@ router.post('/', async (req, res) => {
       mensaje: 'Venta registrada correctamente',
       venta_id: nuevaVenta.id
     });
-  }} catch (error) {
+
+  } catch (error) {
     console.error('[POST /ventas] Error:', error);
     if (trx) {
       try { await trx.rollback(); } catch (_) {}
