@@ -6,6 +6,13 @@ const Inventario = require('../models/Inventario');
 // Mocks y configuración de prueba
 jest.mock('../models/Inventario');
 
+jest.mock('../middlewares/authMiddleware', () => {
+  return (req, res, next) => {
+    req.user = { id: 1, username: 'testuser' }; // Mock user object
+    next();
+  };
+});
+
 const app = express();
 app.use(express.json());
 app.use('/inventario', inventarioRouter);

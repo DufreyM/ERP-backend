@@ -17,14 +17,12 @@
 
 // Última modificación: 12/05/2025
 
-const auth = require('../middlewares/authMiddleware');
-
-router.use(auth);
-
 const express = require('express');
 const router = express.Router();
 const Inventario = require('../models/Inventario');
 const authenticateToken = require('../middlewares/authMiddleware');
+
+// Middleware de autenticación aplicado a todas las rutas
 router.use(authenticateToken);
 
 // Obtener todo el inventario
