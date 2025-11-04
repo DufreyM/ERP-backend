@@ -29,7 +29,7 @@ async function crearNotificacionesDeVencimientoDoc(documento, usuario, localId) 
             await Calendario.query().insert({
                 usuario_id: usuario.id,
                 local_id: localId,
-                tipo_evento_id: 1,
+                tipo_evento_id: 2,
                 titulo: f.titulo,
                 detalles: f.mensaje,
                 estado_id: 1,
