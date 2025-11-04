@@ -1,4 +1,3 @@
-// middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 module.exports = function authenticateToken(req, res, next) {
@@ -6,21 +5,17 @@ module.exports = function authenticateToken(req, res, next) {
   const [scheme, token] = auth.split(' ');
 
   if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({ error: 'Token no proporcionado o esquema inválido' });
+    return res.status(401).json({ error: 'Token no proporcionado' }); // Cambiado para coincidir con la prueba
   }
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // Asegúrate que /login firme { id, email, rol_id, local_id }
     req.user = {
       id: payload.id,
       email: payload.email,
       rol_id: payload.rol_id,
       local_id: payload.local_id
     };
-
-    // Diagnóstico temporal (comenta en producción)
-    // console.log('auth user =>', req.user);
 
     return next();
   } catch (err) {

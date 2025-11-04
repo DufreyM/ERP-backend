@@ -37,9 +37,9 @@ async function crearNotificacionesDeVencimientoDoc(documento, usuario, localId) 
             });
         }
 
-        console.log(`✅ Notificaciones creadas para documento: ${documento.nombre}`);
+        console.log(`Notificaciones creadas para documento: ${documento.nombre}`);
     } catch (error) {
-        console.error('❌ Error creando notificaciones de vencimiento de documento:', error.message);
+        console.error('Error creando notificaciones de vencimiento de documento:', error.message);
         throw error;
     }
 }
