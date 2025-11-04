@@ -122,6 +122,45 @@ router.get('/notificaciones', authenticateToken, checkPermission('ver_notificaci
     }
 });
 
+// Marcar evento o notificación como terminado (sin eliminar)
+router.put('/:id/marcar-terminado', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = req.user;
+
+        // 1️⃣ Buscar el evento
+        const evento = await Calendario.query().findById(id);
+        if (!evento) {
+        return res.status(404).json({ error: 'Evento no encontrado' });
+        }
+
+        // 2️⃣ Verificar permisos
+        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+        return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        // 3️⃣ Cambiar estado a "Terminado" (id = 3) SIN tocar fecha_eliminado
+        const actualizado = await Calendario.query()
+        .patchAndFetchById(id, {
+            estado_id: 3
+            // ❌ No tocamos fecha_eliminado ni la fecha_terminado
+        });
+
+        res.json({
+        success: true,
+        message: 'Evento marcado como terminado',
+        data: actualizado
+        });
+
+    } catch (err) {
+        console.error('Error al marcar como terminado:', err);
+        res.status(500).json({
+        error: 'Error al marcar evento como terminado',
+        detalles: err.message
+        });
+    }
+});
+
 // Endpoint específico para tareas (reabastecimiento)
 router.get('/tareas', authenticateToken, checkPermission('ver_tareas'), async (req, res) => {
     try {
@@ -209,7 +248,7 @@ router.put('/:id', authenticateToken, checkPermission('editar_evento'), async (r
     });
 
     // Ruta PUT para marcado como eliminado
-    router.put('/:id/marcar-eliminado', authenticateToken, checkPermission('eliminar_evento'), async (req, res) => {
+router.put('/:id/marcar-eliminado', authenticateToken, checkPermission('editar_evento'), async (req, res) => {
     try {
         const { id } = req.params;
         const usuario = req.user;
@@ -249,6 +288,45 @@ router.put('/:id', authenticateToken, checkPermission('editar_evento'), async (r
         details: error.message
         });
     }
+    },
+
+    // Marcar evento o notificación como terminado (sin eliminar)
+    router.put('/:id/marcar-terminado', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = req.user;
+
+        // 1️⃣ Buscar el evento
+        const evento = await Calendario.query().findById(id);
+        if (!evento) {
+        return res.status(404).json({ error: 'Evento no encontrado' });
+        }
+
+        // 2️⃣ Verificar permisos
+        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+        return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        // 3️⃣ Cambiar estado a "Terminado" (id = 3)
+        const actualizado = await Calendario.query()
+        .patchAndFetchById(id, {
+            estado_id: 3,
+            fecha_terminado: new Date().toISOString()
+        });
+
+        res.json({
+        success: true,
+        message: 'Evento marcado como terminado',
+        data: actualizado
+        });
+    } catch (err) {
+        console.error('Error al marcar como terminado:', err);
+        res.status(500).json({
+        error: 'Error al marcar evento como terminado',
+        detalles: err.message
+        });
+    }
+    }));
 
     // Obtener eventos eliminados
     router.get('/eliminados', authenticateToken, checkPermission('ver_calendario'), async (req, res) => {
@@ -280,6 +358,5 @@ router.put('/:id', authenticateToken, checkPermission('editar_evento'), async (r
             });
         }
     });
-});
 
 module.exports = router;
