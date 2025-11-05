@@ -5,7 +5,7 @@ const Estado_Calendario = require('../models/Estado_Calendario');
 const TipoEventoCalendario = require('../models/Tipo_Evento_Calendario');
 const knex = require('../database/knexfile').development;
 const authenticateToken = require('../middlewares/authMiddleware');
-const { formatCalendarioNotificaciones, formatCalendario } = require('../helpers/formatters/calendarioFormatter');
+const checkPermission = require('../middlewares/checkPermission');
 
 //funcion auxiliar - Renato R. 24/07/25
 async function getTipoEventoId(nombre) {
@@ -15,7 +15,7 @@ async function getTipoEventoId(nombre) {
 }
 
 // Obtener eventos filtrados por local y fecha
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, checkPermission('ver_calendario'), async (req, res) => {
     try {
         const { start, end, local_id, tipo_evento_id } = req.query;
         const usuario = req.user;
@@ -50,14 +50,7 @@ router.get('/', authenticateToken, async (req, res) => {
         }
 
         const eventos = await query;
-
-        //datos filtados
-        const formatted = eventos.map(formatCalendario);
-
-        res.json(formatted);
-
-        //datos originales
-        //res.json(eventos);
+        res.json(eventos);
     } catch (err) {
         console.error('Error obteniendo eventos del calendario:', err);
         res.status(500).json({ 
@@ -68,7 +61,6 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Nuevo endpoint para obtener estados de calendario
-//No necesita filtrado
 router.get('/estados', async (req, res) => {
     try {
         const estados = await Estado_Calendario.query();
@@ -82,7 +74,6 @@ router.get('/estados', async (req, res) => {
     }
 });
 
-//No necesita filtrado
 router.get('/tipos-evento', async (req, res) => {
     try {
         const tiposEvento = await TipoEventoCalendario.query();
@@ -95,7 +86,7 @@ router.get('/tipos-evento', async (req, res) => {
 });
 
 // Endpoint específico para notificaciones (productos por expirar)
-router.get('/notificaciones', authenticateToken, async (req, res) => {
+router.get('/notificaciones', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
     try {
         const { local_id } = req.query;
         const usuario = req.user;
@@ -121,12 +112,7 @@ router.get('/notificaciones', authenticateToken, async (req, res) => {
         }
 
         const notificaciones = await query;
-
-        //filtrado
-        const formatted = notificaciones.map(formatCalendarioNotificaciones)
-
-        //res.json(notificaciones);
-        res.json(formatted);
+        res.json(notificaciones);
     } catch (err) {
         console.error('Error obteniendo notificaciones:', err);
         res.status(500).json({ 
@@ -136,8 +122,47 @@ router.get('/notificaciones', authenticateToken, async (req, res) => {
     }
 });
 
+// Marcar evento o notificación como terminado (sin eliminar)
+router.put('/:id/marcar-terminado', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = req.user;
+
+        // 1️⃣ Buscar el evento
+        const evento = await Calendario.query().findById(id);
+        if (!evento) {
+        return res.status(404).json({ error: 'Evento no encontrado' });
+        }
+
+        // 2️⃣ Verificar permisos
+        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+        return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        // 3️⃣ Cambiar estado a "Terminado" (id = 3) SIN tocar fecha_eliminado
+        const actualizado = await Calendario.query()
+        .patchAndFetchById(id, {
+            estado_id: 3
+            // ❌ No tocamos fecha_eliminado ni la fecha_terminado
+        });
+
+        res.json({
+        success: true,
+        message: 'Evento marcado como terminado',
+        data: actualizado
+        });
+
+    } catch (err) {
+        console.error('Error al marcar como terminado:', err);
+        res.status(500).json({
+        error: 'Error al marcar evento como terminado',
+        detalles: err.message
+        });
+    }
+});
+
 // Endpoint específico para tareas (reabastecimiento)
-router.get('/tareas', authenticateToken, async (req, res) => {
+router.get('/tareas', authenticateToken, checkPermission('ver_tareas'), async (req, res) => {
     try {
         const { local_id } = req.query;
         const usuario = req.user;
@@ -163,13 +188,7 @@ router.get('/tareas', authenticateToken, async (req, res) => {
         }
 
         const tareas = await query;
-
-        //datos filtrados
-        const formatted = tareas.map(formatCalendarioNotificaciones)
-
-        res.json(formatted);
-        //datos originales
-        //res.json(tareas);
+        res.json(tareas);
     } catch (err) {
         console.error('Error obteniendo tareas:', err);
         res.status(500).json({ 
@@ -180,7 +199,7 @@ router.get('/tareas', authenticateToken, async (req, res) => {
 });
 
 // Crear evento
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkPermission('crear_evento'), async (req, res) => {
     try {
         const usuario = req.user;
         
@@ -209,7 +228,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Actualizar evento
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, checkPermission('editar_evento'), async (req, res) => {
         try {
             const usuario = req.user;
             const evento = await Calendario.query().findById(req.params.id);
@@ -229,7 +248,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     });
 
     // Ruta PUT para marcado como eliminado
-    router.put('/:id/marcar-eliminado', authenticateToken, async (req, res) => {
+router.put('/:id/marcar-eliminado', authenticateToken, checkPermission('editar_evento'), async (req, res) => {
     try {
         const { id } = req.params;
         const usuario = req.user;
@@ -269,9 +288,48 @@ router.put('/:id', authenticateToken, async (req, res) => {
         details: error.message
         });
     }
+    },
+
+    // Marcar evento o notificación como terminado (sin eliminar)
+    router.put('/:id/marcar-terminado', authenticateToken, checkPermission('ver_notificaciones'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuario = req.user;
+
+        // 1️⃣ Buscar el evento
+        const evento = await Calendario.query().findById(id);
+        if (!evento) {
+        return res.status(404).json({ error: 'Evento no encontrado' });
+        }
+
+        // 2️⃣ Verificar permisos
+        if (usuario.rol_id !== 1 && evento.usuario_id !== usuario.id) {
+        return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        // 3️⃣ Cambiar estado a "Terminado" (id = 3)
+        const actualizado = await Calendario.query()
+        .patchAndFetchById(id, {
+            estado_id: 3,
+            fecha_terminado: new Date().toISOString()
+        });
+
+        res.json({
+        success: true,
+        message: 'Evento marcado como terminado',
+        data: actualizado
+        });
+    } catch (err) {
+        console.error('Error al marcar como terminado:', err);
+        res.status(500).json({
+        error: 'Error al marcar evento como terminado',
+        detalles: err.message
+        });
+    }
+    }));
 
     // Obtener eventos eliminados
-    router.get('/eliminados', authenticateToken, async (req, res) => {
+    router.get('/eliminados', authenticateToken, checkPermission('ver_calendario'), async (req, res) => {
         try {
             const usuario = req.user;
             
@@ -300,6 +358,5 @@ router.put('/:id', authenticateToken, async (req, res) => {
             });
         }
     });
-});
 
 module.exports = router;

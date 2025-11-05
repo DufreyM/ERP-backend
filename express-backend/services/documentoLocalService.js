@@ -15,13 +15,18 @@
 // Autor: Leonardo Dufrey Mejía Mejía, 23648
 // Última modificación: 13/07/2025
 
+// express-backend\services\documentoLocalService.js
 const express = require('express');
 const router = express.Router();
 const DocumentoLocal = require('../models/DocumentoLocal');
-const path = require('path');
+const Calendario = require('../models/Calendario');
 const cloudinary = require('../services/cloudinary');
-
 const auth = require('../middlewares/authMiddleware');
+const { 
+    crearNotificacionesDeVencimientoDoc, 
+    eliminarNotificacionesDeDocumento 
+} = require('./notificacionesVencimientoDoc');
+
 router.use(auth);
 
 // Obtener todos los documentos activos
@@ -98,11 +103,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Crear nuevo documento (sin multer)
+// Crear nuevo documento con notificaciones
 router.post('/', async (req, res) => {
   try {
     let archivoURL = null;
 
+    // Manejar subida de archivo si existe
     if (req.files?.archivo) {
       const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
         folder: 'documentos_locales', 
@@ -114,27 +120,55 @@ router.post('/', async (req, res) => {
       archivoURL = req.body.archivo;
     }
 
-    const nuevo = await DocumentoLocal.query().insert({
+    const datosDocumento = {
       ...req.body,
-      usuario_id: parseInt(req.body.usuario_id, 10),
+      usuario_id: req.user.id, // Usar el usuario autenticado
       local_id: parseInt(req.body.local_id, 10),
       archivo: archivoURL,
       creacion: new Date().toISOString(),
       updatedat: new Date().toISOString()
-    });
+    };
 
-    res.status(201).json(nuevo);
+    // Validar campos requeridos
+    if (!datosDocumento.nombre || !datosDocumento.local_id) {
+      return res.status(400).json({ error: 'Nombre y local_id son campos requeridos' });
+    }
+
+    const nuevo = await DocumentoLocal.query().insert(datosDocumento);
+
+    // Crear notificaciones de vencimiento si existe fecha de vencimiento
+    if (datosDocumento.vencimiento) {
+      try {
+        await crearNotificacionesDeVencimientoDoc(
+          nuevo,
+          req.user,
+          datosDocumento.local_id
+        );
+      } catch (notifErr) {
+        console.warn('No se pudieron crear las notificaciones del documento:', notifErr.message);
+        // Continuar aunque falle la notificación
+      }
+    }
+
+    res.status(201).json({
+      mensaje: 'Documento creado exitosamente',
+      documento: nuevo
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Error al crear el documento', details: err.message });
+    console.error('Error al crear documento:', err);
+    res.status(400).json({ 
+      error: 'Error al crear el documento', 
+      details: err.message 
+    });
   }
 });
 
-
-// Actualizar documento
+// Actualizar documento y notificaciones
 router.put('/:id', async (req, res) => {
   try {
     let archivoURL = req.body.archivo;
 
+    // Manejar subida de archivo si existe
     if (req.files?.archivo) {
       const resultado = await cloudinary.uploader.upload(req.files.archivo.tempFilePath, {
         folder: 'documentos_locales', 
@@ -156,26 +190,69 @@ router.put('/:id', async (req, res) => {
     const actualizado = await DocumentoLocal.query().patchAndFetchById(req.params.id, data);
     if (!actualizado) return res.status(404).json({ error: 'Documento no encontrado' });
 
-    res.json(actualizado);
+    // Si se actualizó la fecha de vencimiento, recrear notificaciones
+    if (req.body.vencimiento) {
+      try {
+        // Primero eliminar notificaciones existentes para este documento
+        await Calendario.query()
+          .where('titulo', 'like', `%${actualizado.nombre}%`)
+          .delete();
+
+        // Crear nuevas notificaciones
+        await crearNotificacionesDeVencimientoDoc(
+          actualizado,
+          req.user,
+          actualizado.local_id
+        );
+      } catch (notifErr) {
+        console.warn('No se pudieron actualizar las notificaciones:', notifErr.message);
+      }
+    }
+
+    res.json({
+      mensaje: 'Documento actualizado exitosamente',
+      documento: actualizado
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Error al actualizar el documento', details: err.message });
+    console.error('Error al actualizar documento:', err);
+    res.status(400).json({ 
+      error: 'Error al actualizar el documento', 
+      details: err.message 
+    });
   }
 });
 
-
-// Eliminar documento (lógicamente)
+// Eliminar documento (lógicamente) y sus notificaciones
 router.delete('/:id', async (req, res) => {
   try {
+    // Primero obtener el documento antes de eliminarlo
+    const documento = await DocumentoLocal.query().findById(req.params.id);
+    if (!documento) {
+      return res.status(404).json({ error: 'Documento no encontrado' });
+    }
+
     const eliminado = await DocumentoLocal.query()
       .patchAndFetchById(req.params.id, {
         deletedat: new Date().toISOString()
       });
 
-    if (!eliminado) return res.status(404).json({ error: 'Documento no encontrado' });
+    // Eliminar notificaciones asociadas
+    try {
+      await eliminarNotificacionesDeDocumento(req.params.id);
+    } catch (notifErr) {
+      console.warn('No se pudieron eliminar las notificaciones:', notifErr.message);
+    }
 
-    res.json({ mensaje: 'Documento eliminado lógicamente', documento: eliminado });
+    res.json({ 
+      mensaje: 'Documento eliminado lógicamente', 
+      documento: eliminado 
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar el documento', details: err.message });
+    console.error('Error al eliminar documento:', err);
+    res.status(500).json({ 
+      error: 'Error al eliminar el documento', 
+      details: err.message 
+    });
   }
 });
 

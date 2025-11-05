@@ -26,7 +26,10 @@ describe('authMiddleware', () => {
 
   test('debe devolver 403 si el token es inválido', () => {
     req.headers['authorization'] = 'Bearer tokenInvalido';
-    jwt.verify.mockImplementation((token, secret, cb) => cb(new Error('Token inválido')));
+    // Mock para verificación síncrona que lanza error
+    jwt.verify.mockImplementation(() => {
+      throw new Error('Token inválido');
+    });
 
     authenticateToken(req, res, next);
     expect(res.status).toHaveBeenCalledWith(403);
@@ -35,13 +38,24 @@ describe('authMiddleware', () => {
 
   test('debe llamar next() y establecer req.user si el token es válido', () => {
     req.headers['authorization'] = 'Bearer tokenValido';
-    const userPayload = { id: 1, rol_id: 2, local_id: 3 };
+    const userPayload = { 
+      id: 1, 
+      rol_id: 2, 
+      local_id: 3,
+      email: 'test@example.com'
+    };
 
-    jwt.verify.mockImplementation((token, secret, cb) => cb(null, userPayload));
+    // Mock para verificación síncrona que retorna el payload
+    jwt.verify.mockReturnValue(userPayload);
 
     authenticateToken(req, res, next);
 
-    expect(req.user).toEqual(userPayload);
+    expect(req.user).toEqual({
+      id: 1,
+      email: 'test@example.com',
+      rol_id: 2,
+      local_id: 3
+    });
     expect(next).toHaveBeenCalled();
   });
 });

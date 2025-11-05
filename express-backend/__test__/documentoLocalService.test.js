@@ -9,6 +9,27 @@ const path = require('path');
 // Mocks
 jest.mock('../models/DocumentoLocal');
 jest.mock('../services/cloudinary');
+jest.mock('../middlewares/authMiddleware'); // Mock del middleware de auth
+jest.mock('../services/notificacionesVencimientoDoc'); // Mock de las notificaciones
+
+const auth = require('../middlewares/authMiddleware');
+const { crearNotificacionesDeVencimientoDoc, eliminarNotificacionesDeDocumento } = require('../services/notificacionesVencimientoDoc');
+
+// Mock del middleware de autenticación para simular usuario autenticado
+auth.mockImplementation((req, res, next) => {
+  req.user = {
+    id: 1,
+    nombre: 'Usuario',
+    apellidos: 'Prueba',
+    email: 'usuario@prueba.com',
+    rol_id: 1
+  };
+  next();
+});
+
+// Mock de las funciones de notificación
+crearNotificacionesDeVencimientoDoc.mockResolvedValue();
+eliminarNotificacionesDeDocumento.mockResolvedValue();
 
 const app = express();
 app.use(express.json());
@@ -16,7 +37,7 @@ app.use(fileUpload({ useTempFiles: true, tempFileDir: '/tmp/' }));
 app.use('/', documentoRouter);
 
 describe('Documento Local Service API', () => {
-  afterEach(() => {
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
@@ -85,7 +106,9 @@ describe('Documento Local Service API', () => {
     const mockResult = {
       id: 10,
       ...nuevoDoc,
-      archivo: 'https://cloudinary.com/fake.pdf'
+      archivo: 'https://cloudinary.com/fake.pdf',
+      creacion: new Date().toISOString(),
+      updatedat: new Date().toISOString()
     };
 
     DocumentoLocal.query.mockReturnValue({
@@ -101,13 +124,60 @@ describe('Documento Local Service API', () => {
       .attach('archivo', path.resolve(__dirname, 'mocks/fake.pdf'));
 
     expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('nombre', 'Nuevo Documento');
-    expect(res.body.archivo).toMatch(/^https:\/\/cloudinary\.com/);
+    expect(res.body).toHaveProperty('mensaje', 'Documento creado exitosamente');
+    expect(res.body.documento).toHaveProperty('nombre', 'Nuevo Documento');
+    expect(res.body.documento.archivo).toMatch(/^https:\/\/cloudinary\.com/);
+    
+    // Verificar que se llamó a la función de notificaciones
+    expect(crearNotificacionesDeVencimientoDoc).toHaveBeenCalled();
+  });
+
+  test('POST / - debe crear documento sin notificaciones si no hay vencimiento', async () => {
+    const nuevoDoc = {
+      nombre: 'Documento Sin Vencimiento',
+      usuario_id: '1',
+      local_id: '1'
+      // Sin campo vencimiento
+    };
+
+    cloudinary.uploader.upload.mockResolvedValue({
+      secure_url: 'https://cloudinary.com/fake.pdf'
+    });
+
+    const mockResult = {
+      id: 11,
+      ...nuevoDoc,
+      archivo: 'https://cloudinary.com/fake.pdf',
+      creacion: new Date().toISOString(),
+      updatedat: new Date().toISOString()
+    };
+
+    DocumentoLocal.query.mockReturnValue({
+      insert: jest.fn().mockResolvedValue(mockResult)
+    });
+
+    const res = await request(app)
+      .post('/')
+      .field('nombre', nuevoDoc.nombre)
+      .field('usuario_id', nuevoDoc.usuario_id)
+      .field('local_id', nuevoDoc.local_id)
+      .attach('archivo', path.resolve(__dirname, 'mocks/fake.pdf'));
+
+    expect(res.statusCode).toBe(201);
+    expect(crearNotificacionesDeVencimientoDoc).not.toHaveBeenCalled();
   });
 
   test('PUT /:id - debe actualizar un documento existente', async () => {
-    const updateData = { nombre: 'Doc Actualizado', updatedat: new Date().toISOString() };
-    const mockUpdated = { id: 1, ...updateData };
+    const updateData = { 
+      nombre: 'Doc Actualizado', 
+      updatedat: new Date().toISOString() 
+    };
+    const mockUpdated = { 
+      id: 1, 
+      ...updateData,
+      local_id: 1,
+      nombre: 'Doc Actualizado'
+    };
 
     DocumentoLocal.query.mockReturnValue({
       patchAndFetchById: jest.fn().mockResolvedValue(mockUpdated)
@@ -118,31 +188,46 @@ describe('Documento Local Service API', () => {
       .send(updateData);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('nombre', 'Doc Actualizado');
+    expect(res.body.documento).toHaveProperty('nombre', 'Doc Actualizado');
   });
 
   test('DELETE /:id - debe eliminar lógicamente un documento', async () => {
+    const documentoExistente = {
+      id: 1,
+      nombre: 'Doc a eliminar',
+      local_id: 1
+    };
+
     const eliminado = {
       id: 1,
       deletedat: new Date().toISOString()
     };
 
-    DocumentoLocal.query.mockReturnValue({
+    // Mock para encontrar el documento primero
+    DocumentoLocal.query.mockReturnValueOnce({
+      findById: jest.fn().mockResolvedValue(documentoExistente)
+    });
+
+    // Mock para la eliminación lógica
+    DocumentoLocal.query.mockReturnValueOnce({
       patchAndFetchById: jest.fn().mockResolvedValue(eliminado)
     });
 
     const res = await request(app).delete('/1');
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('mensaje', 'Documento eliminado lógicamente');
+    expect(eliminarNotificacionesDeDocumento).toHaveBeenCalledWith('1');
   });
 
   test('DELETE /:id - debe retornar 404 si no encuentra el documento', async () => {
-    DocumentoLocal.query.mockReturnValue({
-      patchAndFetchById: jest.fn().mockResolvedValue(null)
+    // Mock para simular que no encuentra el documento
+    DocumentoLocal.query.mockReturnValueOnce({
+      findById: jest.fn().mockResolvedValue(null)
     });
 
     const res = await request(app).delete('/999');
     expect(res.statusCode).toBe(404);
     expect(res.body).toHaveProperty('error', 'Documento no encontrado');
+    expect(eliminarNotificacionesDeDocumento).not.toHaveBeenCalled();
   });
 });

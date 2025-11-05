@@ -15,7 +15,7 @@ async function crearNotificacionesDeVencimiento(producto, lote, usuario, localId
         await Calendario.query().insert({
             usuario_id: usuario.id,
             local_id: localId,
-            tipo_evento_id: 1,
+            tipo_evento_id: 2,
             titulo: f.titulo,
             detalles: f.mensaje,
             estado_id: 1,
@@ -23,9 +23,9 @@ async function crearNotificacionesDeVencimiento(producto, lote, usuario, localId
         });
         }
 
-        console.log(`✅ Notificaciones creadas para producto ${producto.nombre}, lote ${lote.lote}`);
+        console.log(`Notificaciones creadas para producto ${producto.nombre}, lote ${lote.lote}`);
     } catch (error) {
-        console.error('❌ Error creando notificaciones de vencimiento:', error.message);
+        console.error('Error creando notificaciones de vencimiento:', error.message);
     }
 }
 

@@ -27,45 +27,39 @@ const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
 
 const authenticateToken = require('../middlewares/authMiddleware');
-const { formatVisitador } = require('../helpers/formatters/visitadoresFormatter');
+const checkPermission = require('../middlewares/checkPermission');
+
 router.use(authenticateToken);
 
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
 
 // Obtener todos los visitadores médicos
-router.get('/', async (req, res) => {
+router.get('/', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query().withGraphFetched(RELACIONES);
-
-    //datos filtrados 
-    const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores médicos', details: err.message });
   }
 });
 
 // Obtener visitadores médicos activos (basado en status del usuario)
-router.get('/activos', async (req, res) => {
+router.get('/activos', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .withGraphFetched(RELACIONES)
       .whereExists(
         VisitadorMedico.relatedQuery('usuario').where('status', 'activo')
       );
-    //datos filtrados 
-    const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores activos', details: err.message });
   }
 });
 
 // Obtener visitador médico por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const visitador = await VisitadorMedico.query()
       .findById(req.params.id)
@@ -74,34 +68,27 @@ router.get('/:id', async (req, res) => {
     if (!visitador) {
       return res.status(404).json({ error: 'Visitador no encontrado' });
     }
-    //datos filtrados 
-    const formatted = formatVisitador(visitador);
-    res.json(formatted)
-    //res.json(visitador);
+
+    res.json(visitador);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitador médico', details: err.message });
   }
 });
 
 // Obtener visitadores por proveedor
-router.get('/proveedor/:proveedorId', async (req, res) => {
+router.get('/proveedor/:proveedorId', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .where('proveedor_id', req.params.proveedorId)
       .withGraphFetched(RELACIONES);
-
-    //datos filtrados 
-    const formatted = visitadores.map(formatVisitador);
-    res.json(formatted)
-    //res.json(visitadores);
+    res.json(visitadores);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener visitadores por proveedor', details: err.message });
   }
 });
 
 // Obtener visitadores médicos por local con status activo
-//ya tiene filtro
-router.get('/por-local/:localId', async (req, res) => {
+router.get('/por-local/:localId', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .withGraphFetched(RELACIONES)
@@ -123,7 +110,7 @@ router.get('/por-local/:localId', async (req, res) => {
 });
 
 // Buscar visitadores por nombre o apellidos del usuario
-router.get('/search', async (req, res) => {
+router.get('/search', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const query = req.query.q;
     if (!query) return res.status(400).json({ error: 'Debe enviar un parámetro de búsqueda ?q=' });
@@ -143,7 +130,7 @@ router.get('/search', async (req, res) => {
 });
 
 // Crear nuevo visitador médico
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('crear_visitador_medico'), async (req, res) => {
   try {
     if (req.body.usuario) {
       req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
@@ -157,7 +144,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /visitadores/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('editar_visitador_medico'), async (req, res) => {
   const visitadorId = parseInt(req.params.id);
   const data = req.body;
 
@@ -247,8 +234,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-
-router.get('/:id/telefonos', async (req, res) => {
+// Obtener teléfonos de visitador
+router.get('/:id/telefonos', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const telefonos = await VisitadorMedico.relatedQuery('telefonos')
       .for(req.params.id);
@@ -276,11 +263,13 @@ async function cambiarEstadoUsuario(req, res, estado) {
   }
 }
 
-router.patch('/:id/deactivate', (req, res) => cambiarEstadoUsuario(req, res, 'inactivo'));
-router.patch('/:id/activate', (req, res) => cambiarEstadoUsuario(req, res, 'activo'));
+// NOTA: Para estas rutas necesitas crear el permiso 'eliminar_visitador_medico'
+// Por ahora usaré 'editar_visitador_medico' como temporal
+router.patch('/:id/deactivate', checkPermission('editar_visitador_medico'), (req, res) => cambiarEstadoUsuario(req, res, 'inactivo'));
+router.patch('/:id/activate', checkPermission('editar_visitador_medico'), (req, res) => cambiarEstadoUsuario(req, res, 'activo'));
 
-// PATCH /visitadores/:id/telefonos
-router.patch('/:id/telefonos', async (req, res) => {
+// Actualizar teléfonos
+router.patch('/:id/telefonos', checkPermission('editar_visitador_medico'), async (req, res) => {
   try {
     const { id } = req.params;
     let { telefonos } = req.body;
@@ -299,7 +288,7 @@ router.patch('/:id/telefonos', async (req, res) => {
 });
 
 // POST /visitadores/:id/documento  (reemplaza el existente y borra en Cloudinary)
-router.post('/:id/documento', async (req, res) => {
+router.post('/:id/documento', checkPermission('subir_archivo_productos'), async (req, res) => {
   try {
     const { id } = req.params;
     const visitador = await VisitadorMedico.query().findById(id);
@@ -355,7 +344,7 @@ router.post('/:id/documento', async (req, res) => {
 });
 
 // GET /visitadores/:id/documento
-router.get('/:id/documento', async (req, res) => {
+router.get('/:id/documento', checkPermission('ver_visitadores_medicos'), async (req, res) => {
   try {
     const { id } = req.params;
     const v = await VisitadorMedico.query().findById(id).select(
@@ -372,7 +361,7 @@ router.get('/:id/documento', async (req, res) => {
 });
 
 // DELETE /visitadores/:id/documento
-router.delete('/:id/documento', async (req, res) => {
+router.delete('/:id/documento', checkPermission('subir_archivo_productos'), async (req, res) => {
   try {
     const { id } = req.params;
     const v = await VisitadorMedico.query().findById(id);

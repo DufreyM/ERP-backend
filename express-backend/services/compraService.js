@@ -7,7 +7,6 @@ const Lote = require('../models/Lote')
 const Producto = require('../models/Producto');
 const authenticateToken = require('../middlewares/authMiddleware');
 const crearNotificacionesDeVencimiento = require('./notificacionesVencimiento');
-const { formatCompra } = require('../helpers/formatters/compraFormatter')
 
 router.use(authenticateToken);
 
@@ -32,14 +31,8 @@ router.get('/', async (req, res) => {
       compras = await Compra.query().withGraphFetched('[usuario, proveedor, pagos, productos.lote.producto]')
 
     }
-    //datos filtrados
-    const formatted = compras.map(formatCompra);
 
-    //Datos completos
-    //res.json(compras); 
-
-    //Datos filtrados
-    res.json(formatted);
+    res.json(compras);
 
   } catch (error) {
     console.error(error);

@@ -8,7 +8,7 @@ const knexConfig = require('./database/knexfile.js');
 const knex = Knex(knexConfig.development);
 Model.knex(knex);
 
-const authRouter = require('./services/mailService');
+const authRouter = require('./routes/authRoutes');
 const productoRouter = require('./routes/productoRoutes');
 const inventarioMovimientoRouter = require('./routes/inventarioRoutes'); 
 const Usuario = require('./models/Usuario.js');
@@ -31,7 +31,7 @@ app.use(helmet());
 
 // Limitar peticiones (previene ataques de fuerza bruta y DDoS)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 30 * 60 * 1000, // 15 minutos
   max: 10000, // máximo 100 solicitudes por IP
   message: 'Demasiadas solicitudes desde esta IP, intenta más tarde.'
 });
@@ -105,3 +105,9 @@ app.use('/clientes', clientesRouter);              // <= NUEVO
 
 const transferenciasRouter = require('./services/transferenciasService');
 app.use('/transferencias', transferenciasRouter);
+
+const permissionRouter = require('./routes/permissionRouter');
+app.use('/api/permisos', permissionRouter);
+
+const graficasRoutes = require('./routes/graficasRoutes');
+app.use('/graficas', graficasRoutes);
