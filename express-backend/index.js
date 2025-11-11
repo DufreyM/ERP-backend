@@ -111,3 +111,5 @@ app.use('/api/permisos', permissionRouter);
 
 const graficasRoutes = require('./routes/graficasRoutes');
 app.use('/graficas', graficasRoutes);
+
+require('./services/stockCron');
