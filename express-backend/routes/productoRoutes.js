@@ -5,6 +5,7 @@ const { obtenerProductosConStock } = require('../services/productoService');
 const { buscarProductosConStock } = require('../services/productoService');
 const authenticateToken = require('../middlewares/authMiddleware');
 const cloudinary = require('../services/cloudinary');
+const crearNotificacionesDeStockMinimo = require('../services/notificacionesStockMinimo');
 
 // ✅ Obtener todos los productos con stock
 router.get('/con-stock', async (req, res) => {
@@ -118,6 +119,18 @@ router.delete('/:id', async (req, res) => {
     res.json({ mensaje: 'Producto eliminado' });
   } catch (err) {
     res.status(400).json({ error: 'Error al eliminar producto', details: err.message });
+  }
+});
+
+router.post('/notificaciones-stock', authenticateToken, async (req, res) => {
+  const { local_id } = req.body;
+  const usuario = req.user; // viene del middleware authenticateToken
+
+  try {
+    await crearNotificacionesDeStockMinimo(usuario, local_id);
+    res.json({ mensaje: 'Notificaciones de stock mínimo creadas correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al crear notificaciones', details: err.message });
   }
 });
 
