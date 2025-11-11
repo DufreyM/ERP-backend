@@ -16,11 +16,26 @@ router.get('/con-stock', async (req, res) => {
   }
 });
 
-// ✅ Obtener todos los productos
+// ✅ Obtener todos los productos filtrados por local
 router.get('/', async (req, res) => {
-  const productos = await Producto.query();
-  res.json(productos);
+  const { local_id } = req.query;
+
+  try {
+    let query = Producto.query()
+      .distinct('productos.*')
+      .leftJoin('inventario as i', 'i.producto_id', 'productos.id');
+
+    if (local_id) {
+      query = query.where('i.local_id', local_id);
+    }
+
+    const productos = await query;
+    res.json(productos);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener productos', details: err.message });
+  }
 });
+
 
 // ✅ Buscar productos con stock
 router.get('/search', async (req, res) => {
