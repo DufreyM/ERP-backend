@@ -206,6 +206,76 @@ router.get('/ventas-12-meses', async (req, res) => {
   }
 });
 
+// ---------------------------
+// Meta de ventas semanal
+// ---------------------------
+router.get('/meta-semanal', async (req, res) => {
+  const { local_id } = req.query;
+  const metaSemanal = 5000; // 💡 Ajusta tu meta en moneda local
+
+  try {
+    const inicioSemana = raw(`DATE_TRUNC('week', NOW())`);
+    const ventasSemana = await Venta.query()
+      .modify(qb => {
+        if (local_id) {
+          qb.whereExists(
+            Venta.relatedQuery('detalles')
+              .join('lotes as l', 'detalles.lote_id', 'l.id')
+              .join('inventario as i', 'i.lote_id', 'l.id')
+              .where('i.local_id', local_id)
+          );
+        }
+      })
+      .where('created_at', '>=', raw(`DATE_TRUNC('week', NOW())`))
+      .select(raw(`SUM(total)::numeric(10,2) AS total_ventas`))
+      .first();
+
+    res.json({
+      meta: metaSemanal,
+      ventas: Number(ventasSemana?.total_ventas || 0),
+      cumplimiento: Number(((ventasSemana?.total_ventas || 0) / metaSemanal) * 100).toFixed(2)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener meta semanal', details: err.message });
+  }
+});
+
+
+// ---------------------------
+// Meta de ventas mensual
+// ---------------------------
+router.get('/meta-mensual', async (req, res) => {
+  const { local_id } = req.query;
+  const metaMensual = 20000; // 💡 Ajusta tu meta mensual
+
+  try {
+    const ventasMes = await Venta.query()
+      .modify(qb => {
+        if (local_id) {
+          qb.whereExists(
+            Venta.relatedQuery('detalles')
+              .join('lotes as l', 'detalles.lote_id', 'l.id')
+              .join('inventario as i', 'i.lote_id', 'l.id')
+              .where('i.local_id', local_id)
+          );
+        }
+      })
+      .where('created_at', '>=', raw(`DATE_TRUNC('month', NOW())`))
+      .select(raw(`SUM(total)::numeric(10,2) AS total_ventas`))
+      .first();
+
+    res.json({
+      meta: metaMensual,
+      ventas: Number(ventasMes?.total_ventas || 0),
+      cumplimiento: Number(((ventasMes?.total_ventas || 0) / metaMensual) * 100).toFixed(2)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener meta mensual', details: err.message });
+  }
+});
+
 
 
 module.exports = router;
