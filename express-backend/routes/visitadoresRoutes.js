@@ -130,7 +130,7 @@ router.get('/search', checkPermission('ver_visitadores_medicos'), async (req, re
 });
 
 // Crear nuevo visitador médico
-router.post('/', checkPermission('crear_visitador_medico'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     if (req.body.usuario) {
       req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
