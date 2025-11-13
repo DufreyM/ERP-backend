@@ -29,8 +29,6 @@ const Usuario = require('../models/Usuario');
 const authenticateToken = require('../middlewares/authMiddleware');
 const checkPermission = require('../middlewares/checkPermission');
 
-router.use(authenticateToken);
-
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
 
@@ -132,16 +130,29 @@ router.get('/search', checkPermission('ver_visitadores_medicos'), async (req, re
 // Crear nuevo visitador médico
 router.post('/', async (req, res) => {
   try {
-    if (req.body.usuario) {
-      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
+    // Si llega como texto (por FormData), lo convertimos a objeto:
+    const data = typeof req.body.data === 'string'
+      ? JSON.parse(req.body.data)
+      : req.body.data;
+
+    // Asegurarte de no romper si usuario no existe
+    if (data.usuario) {
+      data.usuario.status = 'inactivo'; // pendiente de aprobación
     }
 
-    const nuevo = await VisitadorMedico.query().insertGraph(req.body);
+    // Inserta el visitador con relaciones
+    const nuevo = await VisitadorMedico.query().insertGraph(data);
+
     res.status(201).json(nuevo);
   } catch (err) {
-    res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
+    console.error('Error al crear visitador médico:', err);
+    res.status(400).json({ 
+      error: 'Error al crear visitador médico', 
+      details: err.message 
+    });
   }
 });
+
 
 // PUT /visitadores/:id
 router.put('/:id', checkPermission('editar_visitador_medico'), async (req, res) => {

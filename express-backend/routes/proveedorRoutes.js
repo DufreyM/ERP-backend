@@ -10,8 +10,6 @@ const checkPermission = require('../middlewares/checkPermission');
 // Relaciones a traer por defecto
 const RELACIONES = '[telefonos, visitadores]';
 
-router.use(auth);
-
 // 📌 Obtener todos los proveedores
 router.get('/', async (req, res) => {
   try {
@@ -38,7 +36,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 📌 Crear proveedor
-router.post('/', checkPermission('crear_proveedor'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const nuevo = await Proveedor.query().insertGraph(req.body);
     res.status(201).json(nuevo);
