@@ -51,7 +51,7 @@ router.get('/search', async (req, res) => {
 });
 
 // ✅ Obtener producto por ID
-router.get('/:id', async (req, res) => {
+router.get('/:codigo', async (req, res) => {
   const producto = await Producto.query().findById(req.params.id);
   if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
   res.json(producto);
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
 });
 
 // ✅ Actualizar producto con nueva imagen opcional
-router.put('/:id', async (req, res) => {
+router.put('/:codigo', async (req, res) => {
   try {
     let imagenURL = req.body.imagen;
 
@@ -128,7 +128,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // ✅ Eliminar producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:codigo', async (req, res) => {
   try {
     await Producto.query().deleteById(req.params.id);
     res.json({ mensaje: 'Producto eliminado' });
