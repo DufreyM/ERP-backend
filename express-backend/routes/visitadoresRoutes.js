@@ -183,7 +183,7 @@ router.post('/', async (req, res) => {
 });
 
 // POST /visitadores/:id/documento  → Subir o reemplazar documento
-router.post('/:id/documento', checkPermission('subir_archivo_productos'), async (req, res) => {
+router.post('/:id/documento', async (req, res) => {
   try {
     const { id } = req.params;
     const visitador = await VisitadorMedico.query().findById(id);
