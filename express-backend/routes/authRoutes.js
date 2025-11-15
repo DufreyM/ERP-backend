@@ -301,27 +301,29 @@ router.post('/login', async (req, res) => {
             id: usuario.id,
             email: usuario.email,
             rol_id: usuario.rol_id,
-            local_id: usuario.id_local
+            local_id: usuario.id_local,
+            nombre: usuario.nombre,
+            apellidos: usuario.apellidos
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         let redirectUrl;
 
-        switch (usuario.rol_id) {
-            case 1:
-                redirectUrl = '/admin/inicio';
-                break;
-            case 2:
-                redirectUrl = '/dependienta/inicio';
-                break;
-            case 3:
-                redirectUrl = '/visitador/inicio';
-                break;
-            case 4:
-                redirectUrl = '/contador/inicio';
-                break;
-            default:
-                redirectUrl = '/';
-        }
+    switch (usuario.rol_id) {
+        case 1:
+            redirectUrl = '/admin/';
+            break;
+        case 2:
+            redirectUrl = '/dependiente/';
+            break;
+        case 3:
+            redirectUrl = '/visitador-logged/';
+            break;
+        case 4:
+            redirectUrl = '/contador/';
+            break;
+        default:
+            redirectUrl = '/';
+    }
 
         res.status(200).json({ token, redirectUrl });
 

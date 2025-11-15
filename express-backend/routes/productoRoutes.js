@@ -5,6 +5,7 @@ const { obtenerProductosConStock } = require('../services/productoService');
 const { buscarProductosConStock } = require('../services/productoService');
 const authenticateToken = require('../middlewares/authMiddleware');
 const cloudinary = require('../services/cloudinary');
+const crearNotificacionesDeStockMinimo = require('../services/notificacionesStockMinimo');
 
 // ✅ Obtener todos los productos con stock
 router.get('/con-stock', async (req, res) => {
@@ -16,11 +17,26 @@ router.get('/con-stock', async (req, res) => {
   }
 });
 
-// ✅ Obtener todos los productos
+// ✅ Obtener todos los productos filtrados por local
 router.get('/', async (req, res) => {
-  const productos = await Producto.query();
-  res.json(productos);
+  const { local_id } = req.query;
+
+  try {
+    let query = Producto.query()
+      .distinct('productos.*')
+      .leftJoin('inventario as i', 'i.producto_id', 'productos.id');
+
+    if (local_id) {
+      query = query.where('i.local_id', local_id);
+    }
+
+    const productos = await query;
+    res.json(productos);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener productos', details: err.message });
+  }
 });
+
 
 // ✅ Buscar productos con stock
 router.get('/search', async (req, res) => {
@@ -35,7 +51,7 @@ router.get('/search', async (req, res) => {
 });
 
 // ✅ Obtener producto por ID
-router.get('/:id', async (req, res) => {
+router.get('/:codigo', async (req, res) => {
   const producto = await Producto.query().findById(req.params.id);
   if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
   res.json(producto);
@@ -78,7 +94,7 @@ router.post('/', async (req, res) => {
 });
 
 // ✅ Actualizar producto con nueva imagen opcional
-router.put('/:id', async (req, res) => {
+router.put('/:codigo', async (req, res) => {
   try {
     let imagenURL = req.body.imagen;
 
@@ -112,12 +128,24 @@ router.put('/:id', async (req, res) => {
 });
 
 // ✅ Eliminar producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:codigo', async (req, res) => {
   try {
     await Producto.query().deleteById(req.params.id);
     res.json({ mensaje: 'Producto eliminado' });
   } catch (err) {
     res.status(400).json({ error: 'Error al eliminar producto', details: err.message });
+  }
+});
+
+router.post('/notificaciones-stock', authenticateToken, async (req, res) => {
+  const { local_id } = req.body;
+  const usuario = req.user; // viene del middleware authenticateToken
+
+  try {
+    await crearNotificacionesDeStockMinimo(usuario, local_id);
+    res.json({ mensaje: 'Notificaciones de stock mínimo creadas correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al crear notificaciones', details: err.message });
   }
 });
 

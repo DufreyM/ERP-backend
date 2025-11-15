@@ -23,7 +23,8 @@
         "knex": "2.5.1",
         "nodemailer": "7.0.9",
         "objection": "3.1.5",
-        "pg": "8.13.3"
+        "pg": "8.13.3",
+        "node-cron": "4.2.1"
     },
     "devDependencies": {
         "jest": "^29.7.0",

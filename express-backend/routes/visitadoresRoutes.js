@@ -25,17 +25,16 @@ const express = require('express');
 const router = express.Router();
 const VisitadorMedico = require('../models/VisitadorMedico');
 const Usuario = require('../models/Usuario');
-
+const cloudinary = require('../services/cloudinary');
 const authenticateToken = require('../middlewares/authMiddleware');
 const checkPermission = require('../middlewares/checkPermission');
-
-router.use(authenticateToken);
+const path = require('path');
 
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
 
 // Obtener todos los visitadores médicos
-router.get('/', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query().withGraphFetched(RELACIONES);
     res.json(visitadores);
@@ -45,7 +44,7 @@ router.get('/', checkPermission('ver_visitadores_medicos'), async (req, res) => 
 });
 
 // Obtener visitadores médicos activos (basado en status del usuario)
-router.get('/activos', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/activos', async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .withGraphFetched(RELACIONES)
@@ -59,7 +58,7 @@ router.get('/activos', checkPermission('ver_visitadores_medicos'), async (req, r
 });
 
 // Obtener visitador médico por ID
-router.get('/:id', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const visitador = await VisitadorMedico.query()
       .findById(req.params.id)
@@ -76,7 +75,7 @@ router.get('/:id', checkPermission('ver_visitadores_medicos'), async (req, res) 
 });
 
 // Obtener visitadores por proveedor
-router.get('/proveedor/:proveedorId', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/proveedor/:proveedorId', async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .where('proveedor_id', req.params.proveedorId)
@@ -88,7 +87,7 @@ router.get('/proveedor/:proveedorId', checkPermission('ver_visitadores_medicos')
 });
 
 // Obtener visitadores médicos por local con status activo
-router.get('/por-local/:localId', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/por-local/:localId',  async (req, res) => {
   try {
     const visitadores = await VisitadorMedico.query()
       .withGraphFetched(RELACIONES)
@@ -110,7 +109,7 @@ router.get('/por-local/:localId', checkPermission('ver_visitadores_medicos'), as
 });
 
 // Buscar visitadores por nombre o apellidos del usuario
-router.get('/search', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/search', async (req, res) => {
   try {
     const query = req.query.q;
     if (!query) return res.status(400).json({ error: 'Debe enviar un parámetro de búsqueda ?q=' });
@@ -130,21 +129,111 @@ router.get('/search', checkPermission('ver_visitadores_medicos'), async (req, re
 });
 
 // Crear nuevo visitador médico
-router.post('/', checkPermission('crear_visitador_medico'), async (req, res) => {
+// POST /visitadores/  → Crear visitador con documento opcional
+router.post('/', async (req, res) => {
   try {
-    if (req.body.usuario) {
-      req.body.usuario.status = 'inactivo'; // inactivo por default, por ser aprobado por la admin
+    // 1️⃣ Parsear data si viene como string (FormData)
+    const data = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+
+    // 2️⃣ Estado inicial del usuario
+    if (data.usuario) data.usuario.status = 'inactivo'; // pendiente de aprobación
+
+    // 3️⃣ Manejar subida de archivo si existe
+    if (req.files?.documento) {
+      const file = req.files.documento;
+
+      // Validar tipo
+      const allowedMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedMimes.includes(file.mimetype)) {
+        return res.status(400).json({
+          error: 'Formato no permitido. Solo PDF o imágenes (PNG, JPG, JPEG)',
+        });
+      }
+
+      // Subir a Cloudinary usando resource_type auto
+      const uploaded = await cloudinary.uploader.upload(file.tempFilePath, {
+        folder: 'econofarma/visitadores',
+        resource_type: 'auto',
+        use_filename: true,   // conserva el nombre original
+        unique_filename: false
+      });
+
+      // Guardar metadata
+      data.documento_url = uploaded.secure_url;
+      data.documento_public_id = uploaded.public_id;
+      data.documento_nombre = file.name;
+      data.documento_mime = file.mimetype;
+      data.documento_bytes = file.size;
+      data.documento_updated_at = new Date().toISOString();
     }
 
-    const nuevo = await VisitadorMedico.query().insertGraph(req.body);
-    res.status(201).json(nuevo);
+    // 4️⃣ Insertar visitador con relaciones
+    const nuevo = await VisitadorMedico.query().insertGraph(data);
+
+    res.status(201).json({
+      ok: true,
+      message: 'Visitador creado correctamente',
+      visitador: nuevo
+    });
+
   } catch (err) {
+    console.error('Error al crear visitador médico:', err);
     res.status(400).json({ error: 'Error al crear visitador médico', details: err.message });
   }
 });
 
+// POST /visitadores/:id/documento  → Subir o reemplazar documento
+router.post('/:id/documento', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const visitador = await VisitadorMedico.query().findById(id);
+    if (!visitador) return res.status(404).json({ error: 'Visitador no encontrado' });
+
+    if (!req.files?.documento) return res.status(400).json({ error: 'Adjunta el archivo "documento"' });
+    const file = req.files.documento;
+
+    if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.mimetype)) {
+      return res.status(400).json({ error: 'Archivo debe ser PDF o imagen (PNG, JPG, JPEG)' });
+    }
+
+    // Subir a Cloudinary
+    const uploaded = await cloudinary.uploader.upload(file.tempFilePath, {
+      folder: 'econofarma/visitadores',
+      resource_type: 'auto',
+      use_filename: true,
+      unique_filename: false
+    });
+
+    // Borrar documento anterior si existe
+    if (visitador.documento_public_id) {
+      try {
+        await cloudinary.uploader.destroy(visitador.documento_public_id, { resource_type: 'raw' });
+      } catch (e) {
+        console.warn('No se pudo borrar el documento anterior en Cloudinary:', e.message);
+      }
+    }
+
+    // Guardar metadata nueva en DB
+    const updated = await VisitadorMedico.query().patchAndFetchById(id, {
+      documento_url: uploaded.secure_url,
+      documento_public_id: uploaded.public_id,
+      documento_nombre: file.name,
+      documento_mime: file.mimetype,
+      documento_bytes: file.size,
+      documento_updated_at: new Date().toISOString()
+    });
+
+    res.status(201).json({ ok: true, documento: updated });
+
+  } catch (err) {
+    console.error('Error al subir/reemplazar documento:', err);
+    res.status(500).json({ error: 'Error al subir/reemplazar documento', details: err.message });
+  }
+});
+
+
 // PUT /visitadores/:id
-router.put('/:id', checkPermission('editar_visitador_medico'), async (req, res) => {
+router.put('/:id', async (req, res) => {
   const visitadorId = parseInt(req.params.id);
   const data = req.body;
 
@@ -235,7 +324,7 @@ router.put('/:id', checkPermission('editar_visitador_medico'), async (req, res) 
 });
 
 // Obtener teléfonos de visitador
-router.get('/:id/telefonos', checkPermission('ver_visitadores_medicos'), async (req, res) => {
+router.get('/:id/telefonos',  async (req, res) => {
   try {
     const telefonos = await VisitadorMedico.relatedQuery('telefonos')
       .for(req.params.id);

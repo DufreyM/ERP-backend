@@ -111,3 +111,11 @@ app.use('/api/permisos', permissionRouter);
 
 const graficasRoutes = require('./routes/graficasRoutes');
 app.use('/graficas', graficasRoutes);
+
+require('./services/stockCron');
+
+const phrasesRoutes = require('./routes/phrasesFront')
+app.use('/api/frases', phrasesRoutes);
+
+const loteRoutes = require('./routes/LoteRoutes');
+app.use('/lotes', loteRoutes);
