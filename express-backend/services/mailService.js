@@ -17,7 +17,7 @@ function generateToken() {
 }
 
 async function sendVerificationEmail(to, token) {
-    const link = `http://localhost:3000/auth/verify?token=${token}&email=${encodeURIComponent(to)}`;
+    const link = `${process.env.URL}/auth/verify?token=${token}&email=${encodeURIComponent(to)}`;
 
     const mailOptions = {
         from: 'econofarmafarmacias@gmail.com',
@@ -33,7 +33,7 @@ async function sendVerificationEmail(to, token) {
 }
 
 async function sendChangePassEmail(to, token) {
-    const link = `http://localhost:3000/auth/verify-reset?token=${token}&email=${encodeURIComponent(to)}`;
+    const link = `${process.env.URL}/auth/verify-reset?token=${token}&email=${encodeURIComponent(to)}`;
 
     const mailOptions = {
         from: 'econofarmafarmacias@gmail.com',

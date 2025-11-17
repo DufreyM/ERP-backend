@@ -116,3 +116,6 @@ require('./services/stockCron');
 
 const phrasesRoutes = require('./routes/phrasesFront')
 app.use('/api/frases', phrasesRoutes);
+
+const loteRoutes = require('./routes/LoteRoutes');
+app.use('/lotes', loteRoutes);
