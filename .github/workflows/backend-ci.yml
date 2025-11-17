@@ -34,16 +34,16 @@ jobs:
 
       - name: Set up Docker Compose with environment variables
         run: |
-          docker-compose -f docker-compose.yml up -d
+          docker compose -f docker-compose.yml up -d
 
       - name: Install dependencies
         run: |
-          docker-compose exec backend npm install
+          docker compose exec backend npm install
 
       - name: Run tests
         run: |
-          docker-compose exec backend npm run test
+          docker compose exec backend npm run test
 
       - name: Tear down Docker Compose
         run: |
-          docker-compose down
+          docker compose down
