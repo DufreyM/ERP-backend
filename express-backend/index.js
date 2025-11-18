@@ -22,6 +22,7 @@ const documentosLocalesRouter = require('./services/documentoLocalService');
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 // 🔒 Seguridad básica
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -39,7 +40,7 @@ app.use(limiter);
 
 app.use(cors({
   origin: `${process.env.URL}`, 
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
   credentials: true
 }));
 
@@ -52,7 +53,8 @@ app.use(fileUpload({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-app.use('/auth', authRouter);
+app.use('/auth', authRouter); 
+
 app.use('/api/productos', productoRouter);
 app.use('/api/inventario-movimientos', inventarioMovimientoRouter);
 app.use('/api/roles', rolesRouter);
