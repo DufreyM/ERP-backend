@@ -33,6 +33,8 @@ const path = require('path');
 // Helper para relaciones por defecto
 const RELACIONES = '[usuario, proveedor, telefonos]';
 
+router.use(authenticateToken);
+
 // Obtener todos los visitadores médicos
 router.get('/', async (req, res) => {
   try {

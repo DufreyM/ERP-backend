@@ -273,6 +273,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // POST /auth/login - Iniciar sesión
+
 router.post('/login', async (req, res) => {
     const { email, contrasena: password } = req.body;
 
@@ -297,6 +298,7 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ error: 'Usuario inactivo. Contacte al administrador.' });
         }
 
+        // Generar token JWT con info de rol
         const token = jwt.sign({
             id: usuario.id,
             email: usuario.email,
@@ -306,24 +308,16 @@ router.post('/login', async (req, res) => {
             apellidos: usuario.apellidos
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        let redirectUrl;
+        // Definir rutas válidas por rol
+        const rutasPermitidas = {
+            1: '/admin/',
+            2: '/dependiente/',
+            3: '/visitador-logged/',
+            4: '/contador/'
+        };
 
-    switch (usuario.rol_id) {
-        case 1:
-            redirectUrl = '/admin/';
-            break;
-        case 2:
-            redirectUrl = '/dependiente/';
-            break;
-        case 3:
-            redirectUrl = '/visitador-logged/';
-            break;
-        case 4:
-            redirectUrl = '/contador/';
-            break;
-        default:
-            redirectUrl = '/';
-    }
+        // Forzar redirectUrl basado únicamente en el rol real del usuario
+        const redirectUrl = rutasPermitidas[usuario.rol_id] || '/';
 
         res.status(200).json({ token, redirectUrl });
 

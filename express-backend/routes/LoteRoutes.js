@@ -22,20 +22,14 @@ router.get('/', async (req, res) => {
 // ✅ Obtener lotes por código de producto
 // Ej: GET /lotes/producto/123
 // =============================================
+const { obtenerLotesConStock } = require('../services/loteService');
+
 router.get('/producto/:codigo', async (req, res) => {
   try {
-    const { codigo } = req.params;
-
-    const lotes = await Lote.query()
-      .where('producto_id', codigo)
-      .withGraphFetched('producto');
-
+    const lotes = await obtenerLotesConStock(req.params.codigo, req.query.local_id);
     res.json(lotes);
   } catch (err) {
-    res.status(500).json({
-      error: 'Error al obtener lotes del producto',
-      details: err.message
-    });
+    res.status(500).json({ error: 'Error al obtener lotes', details: err.message });
   }
 });
 
